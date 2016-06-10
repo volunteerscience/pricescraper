@@ -6,12 +6,18 @@ var Horseman = require('node-horseman');
 var app = express();
 
 //Lets define a port we want to listen to
-const PORT=7677; 
+const PORT=80; 
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.use('/', express.static('static'));
+
+app.get('/health', function (req, res) {
+  console.log("/health");
+  res.send('success');
+});
+
 
 app.get('/test', function (req, res) {
     console.log("OH YEAH");
