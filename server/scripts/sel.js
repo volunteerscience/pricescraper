@@ -468,3 +468,35 @@ function waitFor(desc, int, cb) {
         }
     }, int);
 }
+
+function collectPriceData(labels) {
+    var prices = $(".vs_price");
+    collective = [];
+    
+    for(var i = 0; i < prices.length; i++) {
+        var price_id = $(prices[i]).attr("price-id");
+        var matches = findElement([{"prop-price-id":"=" + price_id}]);
+        
+        var obj = {};
+        obj["price"] = $(prices[i]).text();
+        obj["price_id"] = price_id;
+            
+        var foundAll = true;
+        for(var l = 0; l < labels.length; l++) {
+            var label = "vs_" + labels[l]; 
+            var info = $("." + label, matches);
+            if(info.length == 1) {
+                obj[labels[l]] = info.text();
+            }
+            else {
+                foundAll = false;
+                break;
+            }
+        }
+        if(foundAll) {
+            collective.push(obj);
+        }
+    }
+    
+    return collective;
+}
