@@ -31,8 +31,13 @@ function flightsLoaded(lessFlightsButton, done) {
     tagDescriptors(usefulSuperStruct, [ 
                                         { "name":"duration", "desc":[{"contents-50":"+ – "}] },
                                         { "name":"stops", "desc":[{"contents-50":"+stop"}] },
-                                        { "name":"airline", "desc":[{"sibling-":{"ref":"duration"}}, {"below-":{"ref":"duration"}}] }
-                                                                                                                                        ]);
+                                        { "name":"airline", "desc":[{"sibling-":{"ref":"duration"}}, {"below-":{"ref":"duration"}}] },
+                                        { "name":"logo", "desc":[{"sibling-":{"ref":"duration"}}, {"left-":{"ref":"duration"}}] },
+                                        { "name":"elapsed", "desc":[{"nav-":"parent,prev,child"}], "matches":"stops" },
+                                        { "name":"airports", "desc":[{"nav-":"next"}], "matches":"elapsed" },
+                                        { "name":"type", "desc":[{"nav-":"next"}], "matches":"price" },
+                                        { "name":"layovers", "desc":[{"nav-":"next"}], "matches":"stops" }
+                                                                                                                                                ]);
     
-    vs_scraper_done(["duration", "stops", "airline"]);
+    vs_scraper_done({"mandatory_labels": ["duration", "stops", "airline"], "data_labels": ["logo", "elapsed", "airports", "type", "layovers"]});
 }

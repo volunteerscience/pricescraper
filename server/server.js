@@ -14,7 +14,6 @@ app.use(bodyParser.json());
 app.use('/', express.static('static'));
 
 app.get('/test', function (req, res) {
-    console.log("OH YEAH");
     res.send('PriceCompare Path: ' + req.url);
 });
 
@@ -30,16 +29,31 @@ app.listen(PORT, function() {
     console.log("Server listening on: http://localhost:%s", PORT);
 });
 
+var supportedSites = [{"site": "https://www.google.com/flights/", "script":"google-flights"},
+                      {"site": "https://www.amazon.com/s/", "script":"amazon"}];
+
 function scrape(result, url) {
+    var scraperScript = null;
+    for(var i = 0; i < supportedSites.length; i++) {
+        if(url.indexOf(supportedSites[i].site) == 0) {
+            scraperScript = supportedSites[i].script;
+            break;
+        }
+    }
+    if(scraperScript == null) {
+        console.log("scrape failed because site unsupported");
+        return;
+    }
+    
     console.log("scraping");
     var page = new Horseman({'timeout':15000});
-
+    
     page
         .open(/*'https://www.google.com/flights/#search;f=BOS;t=JFK,EWR,LGA;d=2016-06-26;r=2016-06-30'*/url)
         .injectJs("scripts/underscore.js")
         .injectJs("scripts/sel.js")
         .injectJs("scripts/process_data.js")
-        .injectJs("sites/google-flights.js")
+        .injectJs("sites/" + scraperScript + ".js")
         .evaluate(function(done) {
             vs_init();
             var checkInt = setInterval(function() {
