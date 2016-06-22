@@ -1,3 +1,5 @@
+//alert("INJECTING");
+
 var jquery = document.createElement('script');
 jquery.src = chrome.extension.getURL('scripts/jquery.js');
 jquery.id = "injected_jquery";
@@ -8,14 +10,17 @@ underscore.src = chrome.extension.getURL('scripts/underscore.js');
 underscore.id = "injected_underscore";
 document.body.appendChild(underscore);
 
-/*var sel = document.createElement('script');
+var sel = document.createElement('script');
 sel.src = chrome.extension.getURL('scripts/sel.js');
 sel.id = "injected_sel";
-document.body.appendChild(sel);*/
+document.body.appendChild(sel);
 
-/*if(document.getElementById("injected_googleFlights") === null) {
-    var googleFlights = document.createElement('script');
-    googleFlights.src = chrome.extension.getURL('sites/google-flights.js');
-    googleFlights.id = "injected_googleFlights";
-    document.body.appendChild(googleFlights);
-}*/
+var debug = document.createElement('script');
+debug.src = chrome.extension.getURL('scripts/client_debug.js');
+debug.id = "injected_debug";
+document.body.appendChild(debug);
+
+/*var scraper = document.createElement('script');
+scraper.src = chrome.extension.getURL('sites/google-flights.js');
+scraper.id = "injected_scraper";
+document.body.appendChild(scraper);*/

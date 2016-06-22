@@ -20,17 +20,13 @@ app.get('/health', function (req, res) {
 
 
 app.get('/test', function (req, res) {
-    console.log("OH YEAH");
     res.send('PriceCompare Path: ' + req.url);
 });
 
 app.post('/reportPrice', function (req, res) {
     console.log('Report Price: ' + req.url);
-    //console.log(req.body);
-    //console.log('  Foo: ' + req.body.foo);
     console.log("coming from: " + req.body.url);
     scrape(res, req.body.url);
-    //res.send(JSON.stringify({'success':'nifty'}));
 });
 
 //Lets start our app
@@ -39,29 +35,43 @@ app.listen(PORT, function() {
     console.log("Server listening on: http://localhost:%s", PORT);
 });
 
-function scrape(result, url) {
-    console.log("scraping");
-    var page = new Horseman();
+var supportedSites = [{"site": "https://www.google.com/flights/", "script":"google-flights"},
+                      {"site": "https://www.amazon.com/s/", "script":"amazon"}];
 
+function scrape(result, url) {
+    var scraperScript = null;
+    for(var i = 0; i < supportedSites.length; i++) {
+        if(url.indexOf(supportedSites[i].site) == 0) {
+            scraperScript = supportedSites[i].script;
+            break;
+        }
+    }
+    if(scraperScript == null) {
+        console.log("scrape failed because site unsupported");
+        return;
+    }
+    
+    console.log("scraping");
+    var page = new Horseman({'timeout':15000});
+    
     page
         .open(/*'https://www.google.com/flights/#search;f=BOS;t=JFK,EWR,LGA;d=2016-06-26;r=2016-06-30'*/url)
         .injectJs("scripts/underscore.js")
         .injectJs("scripts/sel.js")
-        .injectJs("sites/google-flights.js")
+        .injectJs("scripts/process_data.js")
+        .injectJs("sites/" + scraperScript + ".js")
         .evaluate(function(done) {
-            var showMoreFlights = [{"contents-1000":"[+lt]show"}, {"contents-1000":"[+lt]longer"}, {"contents-1000":"[+lt]expensive"}];
-            var hideMoreFlights = [{"contents-1000":"[+lt]hide"}, {"contents-1000":"[+lt]longer"}, {"contents-1000":"[+lt]expensive"}];
-            //done();
-            waitFor(showMoreFlights, 1000, function(moreFlightsButton) {
-                //console.log("waiting");
-                $(moreFlightsButton).trigger("click");
-                waitFor(hideMoreFlights, 1000, function(lessFlightsButton) {
-                    var res = flightsLoaded(lessFlightsButton);
-                    done(null, JSON.stringify(res)); 
-                });
-            });
+            vs_init();
+            var checkInt = setInterval(function() {
+                if(getVSData() != null) {
+                    clearInterval(checkInt);
+                    done(null, getVSData());
+                }
+            }, 500);
         })
         .then(function(msg) {
+            //console.log("HELLO WORLD");
+            //console.log(msg);
             console.log("parsing complete");
             result.send(JSON.stringify(msg));
             //res.send(JSON.stringify({'success':'nifty'}));

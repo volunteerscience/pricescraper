@@ -1,13 +1,14 @@
-function findElement(/*elem*/desc, matchArr) {
+function findElement(/*elem*/desc, matchArr, deep) {
     var matches = [];
     var searchDeepest = false;
     if(typeof matchArr != "undefined") {
-        if(matchArr.length == 1) {
+        if(typeof deep != "undefined" && deep == true) {
             matches = $(matchArr).find("*");
             searchDeepest = true;
         }
-        else if(matchArr.length > 1)
+        else {
             matches = matchArr;
+        }
     }
     
     var searchForBase = false;
@@ -188,6 +189,36 @@ function findElement(/*elem*/desc, matchArr) {
             }
             
         }
+        else if(prefix == "nav") {
+            //console.log("nav");
+            if(matches.length > 0) {
+                //console.log("hooray");
+                //var seq = e.substr(dashInd + 1).split(",");
+                var seq = elem[e].split(",");
+                for(var i = 0; i < seq.length; i++) {
+                    if(seq[i] == "parent") {
+                        matches = $(matches).parent();
+                    }
+                    else if(seq[i] == "prev") {
+                        matches = $(matches).prev();
+                    }
+                    else if(seq[i] == "next") {
+                        matches = $(matches).next();
+                    }
+                    else if(seq[i] == "child") {
+                        var children = [];
+                        for(var x = 0; x < matches.length; x++) {
+                            var currChildren = $(matches[x]).children();
+                            if(currChildren.length > 0) {
+                                currChildren = currChildren[0];
+                            }
+                            children.push(currChildren);
+                        }
+                        matches = children;
+                    }
+                }
+            }
+        }
         else if(prefix == "left" || prefix == "right" || prefix == "above" || prefix == "below") {
             // searchForBase = false;
             var ref = elem[e];
@@ -336,19 +367,25 @@ function findText(txt, op, opGroup, len, container) {
         matches = $("*").not("script");
     }
     else {
-        //console.log("ho boy");
         matches = container;
-        globalOy = matches;
-        //console.log(matches);
     }
-    
     
     var parents = [];
     for(var i = 0; i < matches.length; i++) {
         if(len == null || (len != null && $(matches[i]).text().length < len)) {
             var text = applyOpGroup($(matches[i]).text(), opGroup);
-            if(text.indexOf(txt) >= 0) {
-                parents.push(matches[i]);
+            if(op == "^") {
+                //alert("CHECKING FOR REGEX");
+                var reg = new RegExp(txt);
+                if(reg.test(text)) {
+                    //console.log("GOT ONE");
+                    parents.push(matches[i]);
+                }
+            }
+            else {
+                if(text.indexOf(txt) >= 0) {
+                    parents.push(matches[i]);
+                }
             }
         }
     }
@@ -356,9 +393,10 @@ function findText(txt, op, opGroup, len, container) {
     
     var match = []
     parents.each(function() { 
-        if(isBaseParent(txt, this, opGroup)) {
-            if(op == "+")
+        if(isBaseParent(txt, this, op, opGroup)) {
+            if(op == "+" || op == "^") {
                 match.push(this);
+            }
             else if(applyOpGroup($(this).text(), opGroup) == txt && op == "=") {
                 match.push(this);
             }
@@ -368,10 +406,16 @@ function findText(txt, op, opGroup, len, container) {
     return match;
 }
 
-function isBaseParent(txt, ctx, opGroup) {
+function isBaseParent(txt, ctx, op, opGroup) {
     var node = $(ctx).clone();
     var contents = applyOpGroup(node.ignore("*").text(), opGroup);
-    if(contents.indexOf(txt) >= 0) {
+    if(op == "^") {
+        var reg = new RegExp(txt);
+        if(reg.test(applyOpGroup(contents, opGroup))) {
+            return true;
+        }
+    }
+    else if(contents.indexOf(txt) >= 0) {
         return true;
     }
     return false;
@@ -420,7 +464,8 @@ function tagDescriptors(superStruct, descArr) {
     for(var i = 0; i < superStruct.length; i++) {
         var priceID = $(superStruct[i]).attr("price-id");
         
-        var doms = {};
+        var doms = {"price": $(".vs_price", "[price-id=" + priceID + "]"),
+                   "container": $(".vs_container", "[price-id=" + priceID + "]")}; // always have access to price and container
         for(var j = 0; j < descArr.length; j++) {
             var name = descArr[j].name;
             var desc = [];//descArr[j].desc;
@@ -441,7 +486,15 @@ function tagDescriptors(superStruct, descArr) {
                 }
             }
             
-            var elem = findElement(desc, [superStruct[i]]);
+            var elem = [];
+            if("matches" in descArr[j]) {
+                //alert("SWEET");
+                elem = findElement(desc, doms[descArr[j].matches]);
+                //alert(elem.length + ": " + descArr[j].matches);
+            }
+            else {
+                elem = findElement(desc, [superStruct[i]], true);   
+            }
             doms[name] = elem;
             $(elem).attr("price-id", priceID);
             $(elem).addClass("vs_" + name);
@@ -467,4 +520,43 @@ function waitFor(desc, int, cb) {
             cb(matches);
         }
     }, int);
+}
+
+function collectPriceData(labels) {
+    var prices = $(".vs_price");
+    var allLabels = labels.mandatory_labels.concat(labels.data_labels);
+    
+    collective = [];
+    
+    for(var i = 0; i < prices.length; i++) {
+        var price_id = $(prices[i]).attr("price-id");
+        var matches = findElement([{"prop-price-id":"=" + price_id}]);
+        
+        var obj = {};
+        obj["price"] = $(prices[i]).text();
+        obj["price_id"] = price_id;
+            
+        var foundAll = true;
+        for(var l = 0; l < allLabels.length; l++) {
+            var label = "vs_" + allLabels[l]; 
+            var info = $("." + label, matches);
+            if(info.length == 1) {
+                if(info.prop("tagName") == "IMG") {
+                    obj[allLabels[l]] = info.attr("src");
+                }
+                else {
+                    obj[allLabels[l]] = info.text();
+                }
+            }
+            else if(l < labels.mandatory_labels.length) { // ie contained within mandatory labels
+                foundAll = false;
+                break;
+            }
+        }
+        if(foundAll) {
+            collective.push(obj);
+        }
+    }
+    
+    return collective;
 }
