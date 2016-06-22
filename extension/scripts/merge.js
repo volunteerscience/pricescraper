@@ -143,7 +143,7 @@ function merge(ours, theirs, labels) {
         }
         else {
             //look through the matches for the closest price
-            alert("EXCELLENT - multplie copies of the same entry");
+//            alert("EXCELLENT - multplie copies of the same entry");
             var closestMatch = ours[i].matches[0];
             var oldDiff = Math.abs(resolvePrice(closestMatch.price) - resolvePrice(ours[i].price));
             for(var x = 1; x < ours[i].matches.length; x++) {

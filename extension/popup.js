@@ -26,7 +26,7 @@ function renderStatus(statusText) {
 }
 
 
-$(document).ready(function(){
+$(function(){
   $('body').on('click', 'a', function(){
     // set the current tab
     chrome.tabs.update(myTab, {url: $(this).attr('href')});
