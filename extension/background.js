@@ -1,4 +1,4 @@
-var reportURL = "http://localhost:7677/reportPrice/";
+var reportURL = "https://price.volunteerscience.com/reportPrice/";
 var supportedSites = [{"site": "https://www.google.com/flights/", "script":"google-flights"},
                       {"site": "https://www.amazon.com/s/", "script":"amazon"}];
 
