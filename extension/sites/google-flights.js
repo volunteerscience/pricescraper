@@ -4,7 +4,6 @@ if(typeof window.vs_scraper == "undefined") {
 }
 
 function vs_init() {
-    alert("STARTING");
     var showMoreFlights = [{"contents-1000":"[+lt]show"}, {"contents-1000":"[+lt]longer"}, {"contents-1000":"[+lt]expensive"}];
     var hideMoreFlights = [{"contents-1000":"[+lt]hide"}, {"contents-1000":"[+lt]longer"}, {"contents-1000":"[+lt]expensive"}];
 

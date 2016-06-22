@@ -12,6 +12,6 @@ function vs_scraper_done(labels, params_blacklist) {
     }
     //window.location.href.substr(0, window.location.href.length-5)
     chrome.runtime.sendMessage({"vs_prices": ours, "labels": labels, "url":url }, function(response) {
-        alert("got a response");
+//      alert("got a response");
     });
 }

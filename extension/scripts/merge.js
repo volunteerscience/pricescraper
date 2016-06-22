@@ -7,7 +7,7 @@ function simAddPrice(prices, num) {
     var tags = ["airline", "duration", "stops"];
     
     while(i < num) {
-        alert("i: " + i + ", added a price");
+//        alert("i: " + i + ", added a price");
         var selInd = Math.floor(Math.random() * prices.length);
         var newEntry = { "price": "$" + Math.floor(Math.random() * 500) };
         
@@ -81,7 +81,7 @@ function randomString(length)
 function merge(ours, theirs, labels) {
     //alert("adding prices");
     simRemovePrice(ours, Math.floor(ours.length / 3), true);
-    alert(ours.length + ", " + theirs.length);
+//    alert(ours.length + ", " + theirs.length);
     //var allLabels = labels.mandatory_labels.concat(labels.data_labels);
     
     //theirs = theirs.splice(7);
@@ -157,7 +157,7 @@ function merge(ours, theirs, labels) {
         }
     }
     
-    alert("INSERTING CLONED ELEMENTS");
+//    alert("INSERTING CLONED ELEMENTS");
     var lastContainer = $(getContainer(bottomMostShown));
     
     var clonePriceId = -1;
