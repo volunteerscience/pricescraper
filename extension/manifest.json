@@ -4,7 +4,6 @@
     "name": "Price Comparison",
     "description": "Expose how websites personalize prices to you.",
     "version": "0.0.1",
-    "debug":false,
 
     "background": {
         "scripts": ["background.js"]
