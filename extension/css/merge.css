@@ -1,0 +1,6 @@
+.serverPrice {
+    border-style:dotted;
+    border-width: 1px;
+    padding: 5px;
+    display: inline-block;
+}

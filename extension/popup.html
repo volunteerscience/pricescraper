@@ -1,32 +1,26 @@
 <!doctype html>
 <html>
-  <head>
+
+<head>
     <title>Price Comparison</title>
+    
+    <link rel="stylesheet" href="css/bootstrap.css" />
     <style>
-      body {
-        font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
-        font-size: 100%;
-        width: 400px;
-      }
-      #status {
-        /* avoid an excessively wide status text */
-        white-space: pre;
-        text-overflow: ellipsis;
-        overflow: hidden;
-        max-width: 400px;
-      }
+        body {
+            padding: 30px;
+        }
     </style>
-
-    <script src="jquery-2.2.0.min.js"></script>
+    
+    <script src="scripts/jquery.js"></script>
     <script src="popup.js"></script>
-  </head>
-  <body>
-    <h1>Price Personalization</h1>
-    <h2>Please visit one of our supported pages.</h2>
-    <ul>
-      <li><a href="https://www.expedia.com/">Expedia</a>
-    </ul>
-    <div id="status"></div>
-  </body>
-</html>
+</head>
 
+<body>
+    <div id="title">
+        Sorry.  This page is not supported.
+    </div>
+    
+    <div id="toggleDisable"></div>
+</body>
+
+</html>

@@ -1,4 +1,4 @@
-function findElement(/*elem*/desc, matchArr, deep) {
+function findElement(desc, matchArr, deep) {
     var matches = [];
     var searchDeepest = false;
     if(typeof matchArr != "undefined") {
@@ -31,6 +31,22 @@ function findElement(/*elem*/desc, matchArr, deep) {
                 matches = $(matches).filter(function() {
                     return $(this).text().length < len; 
                 });
+            }
+        }
+        else if(prefix == "visibility") {
+            var visibility = elem[e];
+            var match = [];
+            
+            if(matches.length == 0) {
+                matches = $("*:" + visibility);
+            }
+            else {
+                for(var x = 0; x < matches.length; x++) {
+                    if($(matches[x]).is(":" + visibility)) {
+                        match.push(matches[x]);
+                    }
+                }
+                matches = _.intersection(matches, match);
             }
         }
         if(prefix == "id") {
@@ -78,11 +94,14 @@ function findElement(/*elem*/desc, matchArr, deep) {
             var prop = e.substr(dashInd + 1);
             var propVal = elem[e].substr(1);
             var op = elem[e][0];
+            
+            //console.log(prop + ", " + propVal + ": " + op);
 
             var match = $("[" + prop + "]");
             var filteredMatch = [];
             for(var i = 0; i < match.length; i++) {
                 var curr = $(match[i]);
+                //console.log(curr.attr(prop));
                 if(curr.attr(prop) == propVal) {
                     filteredMatch.push(curr[0]);
                 }
@@ -123,7 +142,6 @@ function findElement(/*elem*/desc, matchArr, deep) {
                 for(var x = 0; x < matches.length; x++) {
                     var currLen = $(matches[x]).text().length;
                     if(len == null || (len != null && currLen < len)) {
-                        //console.log("still alive");
                         var text = applyOpGroup($(matches[x]).text(), opGroup);
                         if(text == txt) {
                             match.push(matches[x]);
@@ -190,32 +208,58 @@ function findElement(/*elem*/desc, matchArr, deep) {
             
         }
         else if(prefix == "nav") {
-            //console.log("nav");
-            if(matches.length > 0) {
-                //console.log("hooray");
-                //var seq = e.substr(dashInd + 1).split(",");
-                var seq = elem[e].split(",");
-                for(var i = 0; i < seq.length; i++) {
-                    if(seq[i] == "parent") {
-                        matches = $(matches).parent();
-                    }
-                    else if(seq[i] == "prev") {
-                        matches = $(matches).prev();
-                    }
-                    else if(seq[i] == "next") {
-                        matches = $(matches).next();
-                    }
-                    else if(seq[i] == "child") {
-                        var children = [];
-                        for(var x = 0; x < matches.length; x++) {
-                            var currChildren = $(matches[x]).children();
-                            if(currChildren.length > 0) {
-                                currChildren = currChildren[0];
-                            }
-                            children.push(currChildren);
+            //console.log("NAV");
+            //console.log(matches);
+            //console.log("\n\n");
+            
+            var seq = elem[e].split(",");
+            
+            for(var s = 0; s < seq.length; s++) {
+                if(seq[s] == "parent") {
+                    //console.log("parent");
+                    var parents = [];
+                    for(var x = 0; x < matches.length; x++) {
+                        //parents.push($(matches[x]).parent()[0]);
+                        var currParents = $(matches[x]).parent();
+                        if(currParents.length > 0) {
+                            parents.push(currParents[0]);    
                         }
-                        matches = children;
                     }
+                    matches = parents;
+                }
+                else if(seq[s] == "prev") {
+                    //console.log("prev");
+                    var prevs = [];
+                    for(var x = 0; x < matches.length; x++) {
+                        var currPrevs = $(matches[x]).prev();
+                        if(currPrevs.length > 0) {
+                            prevs.push(currPrevs[0]);    
+                        }
+                    }
+                    matches = prevs;
+                }
+                else if(seq[s] == "next") {
+                    //console.log("next");
+                    var nexts = [];
+                    for(var x = 0; x < matches.length; x++) {
+                        var currNexts = $(matches[x]).next();
+                        if(currNexts.length > 0) {
+                            nexts.push(currNexts[0]);    
+                        }
+                    }
+                    matches = nexts;
+                }
+                else if(seq[s] == "child") {
+                    //console.log("child");
+                    var children = [];
+                    for(var x = 0; x < matches.length; x++) {
+                        var currChildren = $(matches[x]).children();
+                        if(currChildren.length > 0) {
+                            currChildren = currChildren[0];
+                        }
+                        children.push(currChildren);
+                    }
+                    matches = children;
                 }
             }
         }
@@ -389,19 +433,24 @@ function findText(txt, op, opGroup, len, container) {
             }
         }
     }
-    parents = $(parents);
     
-    var match = []
-    parents.each(function() { 
-        if(isBaseParent(txt, this, op, opGroup)) {
-            if(op == "+" || op == "^") {
-                match.push(this);
-            }
-            else if(applyOpGroup($(this).text(), opGroup) == txt && op == "=") {
-                match.push(this);
+    var markForRemoval = {};
+    for(var i = 0; i < parents.length; i++) {
+        var parentOfCurr = $(parents[i]).parent();
+        if(parentOfCurr.length > 0) {
+            var parentOfCurrIndex = parents.indexOf(parentOfCurr[0]);
+            if(parentOfCurrIndex >= 0) {
+                markForRemoval[parentOfCurrIndex] = true;
             }
         }
-    });
+    }
+    
+    var match = [];
+    for(var i = 0; i < parents.length; i++) {
+        if(!(i in markForRemoval)) {
+            match.push(parents[i]);
+        }
+    }
 
     return match;
 }
@@ -419,144 +468,4 @@ function isBaseParent(txt, ctx, op, opGroup) {
         return true;
     }
     return false;
-}
-
-var uniqueID = (function() {
-   var id = 0; // This is the private persistent value
-   return function() { return id++; };  // Return and increment
-})(); // Invoke the outer function after defining it.
-
-function findSuperStructure(elems) {
-    var superStructure = [];
-    
-    for(var i = 0; i < elems.length; i++) {
-        var currElem = $(elems[i]);
-        var prevElem = null;
-        while(currElem.length > 0) {
-            var subElems = [];
-            for(var j = 0; j < elems.length; j++) {
-                if(j != i) {
-                    subElems.push(elems[j]);
-                }
-            }
-            
-            if(eachContains(currElem, subElems)) {
-                superStructure.push(prevElem[0]);
-                
-                var uid = uniqueID();  
-                $(elems[i]).attr("price-id", uid);
-                $(elems[i]).addClass("vs_price");
-                $(prevElem[0]).attr("price-id", uid);
-                $(prevElem[0]).addClass("vs_container");
-                
-                break;
-            }
-            prevElem = currElem;
-            currElem = $(currElem).parent();
-        }
-    }
-    
-    return superStructure;
-}
-
-function tagDescriptors(superStruct, descArr) {
-    domArr = [];
-    for(var i = 0; i < superStruct.length; i++) {
-        var priceID = $(superStruct[i]).attr("price-id");
-        
-        var doms = {"price": $(".vs_price", "[price-id=" + priceID + "]"),
-                   "container": $(".vs_container", "[price-id=" + priceID + "]")}; // always have access to price and container
-        for(var j = 0; j < descArr.length; j++) {
-            var name = descArr[j].name;
-            var desc = [];//descArr[j].desc;
-            //var descCopy = Object.assign(desc);//[];
-            //var descCopy = jQuery.extend(true, {}, descArr[j].desc);
-            
-            for(var x = 0; x < descArr[j].desc.length; x++) {
-                desc.push(jQuery.extend(true, {}, descArr[j].desc[x]));
-            }
-            
-            for(var x = 0; x < desc.length; x++) {
-                var key = Object.keys(desc[x])[0];
-                if(typeof desc[x][key] == "object" && "ref" in desc[x][key]) {
-                    var ref = desc[x][key].ref;
-                    var ref = desc[x][key].ref;
-                    var backup = desc[x][key];
-                    desc[x][key] = doms[ref];
-                }
-            }
-            
-            var elem = [];
-            if("matches" in descArr[j]) {
-                //alert("SWEET");
-                elem = findElement(desc, doms[descArr[j].matches]);
-                //alert(elem.length + ": " + descArr[j].matches);
-            }
-            else {
-                elem = findElement(desc, [superStruct[i]], true);   
-            }
-            doms[name] = elem;
-            $(elem).attr("price-id", priceID);
-            $(elem).addClass("vs_" + name);
-        }
-        domArr.push(doms);
-    }
-}
-
-function eachContains(elem, arr) {
-    for(var i = 0; i < arr.length; arr++) {
-        if($.contains($(elem)[0], $(arr[i])[0])) {
-            return true;
-        }
-    }
-    return false;
-}
-
-function waitFor(desc, int, cb) {
-    var interval = setInterval(function() {
-        var matches = findElement(desc);
-        if(matches.length > 0) {
-            clearInterval(interval);
-            cb(matches);
-        }
-    }, int);
-}
-
-function collectPriceData(labels) {
-    var prices = $(".vs_price");
-    var allLabels = labels.mandatory_labels.concat(labels.data_labels);
-    
-    collective = [];
-    
-    for(var i = 0; i < prices.length; i++) {
-        var price_id = $(prices[i]).attr("price-id");
-        var matches = findElement([{"prop-price-id":"=" + price_id}]);
-        
-        var obj = {};
-        obj["price"] = $(prices[i]).text();
-        obj["price_id"] = price_id;
-            
-        var foundAll = true;
-        for(var l = 0; l < allLabels.length; l++) {
-            var label = "vs_" + allLabels[l]; 
-            var info = $("." + label, matches);
-            if(info.length == 1) {
-                if(info.prop("tagName") == "IMG") {
-                    obj[allLabels[l]] = info.attr("src");
-                }
-                else {
-                    obj[allLabels[l]] = info.text();
-                }
-            }
-            else if(l < labels.mandatory_labels.length) { // ie contained within mandatory labels
-                foundAll = false;
-                break;
-            }
-        }
-        if(foundAll) {
-            collective.push(obj);
-        }
-    }
-    
-    return collective;
 }

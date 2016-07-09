@@ -4,9 +4,7 @@ function Price(str) {
 
 Price.prototype.resolvePrice = function() {
     var reg = new RegExp("[^0123456789.]");
-    //console.log("TYPE IS : " + typeof this.str);
-    //console.log(this.str);
-    var rawArr = this.str.replace(",", "").split(reg);
+    var rawArr = this.str.split(reg);
     var priceArr = [];
     
     for(var i = 0; i < rawArr.length; i++) {
@@ -58,46 +56,24 @@ function randomString(length)
 }
 
 function merge(ours, theirs, labels) {
-    //alert("AND IT'S GOING PRETTY WELL");
     for(var i = 0; i < ours.length; i++) {
-        //console.log("checking for " + i);
         var bestMatch = findBestMatch(ours, theirs, i, labels["mandatory-labels"]);
         if(bestMatch >= 0) {
             theirs[bestMatch]["used"] = true;
-            //console.log("BEST MATCH FOR OUR " + /*JSON.stringify(ours[i])*/i + " IS THEIR " + /*JSON.stringify(theirs[bestMatch])*/i);
+            console.log("BEST MATCH FOR OUR " + JSON.stringify(ours[i]) + " IS THEIR " + JSON.stringify(theirs[bestMatch]));
             //alert(JSON.stringify(ours[i].vs_price) + "\n" + JSON.stringify(theirs[bestMatch].vs_price));
             
             var ourElems = $(".vs_price", "[vsid=" + ours[i].vsid + "]");
             
             for(var type in ours[i]["vs_price"]) {
                 if(theirs[bestMatch]["vs_price"][type].length > ourElems.length) {
-                    console.log("Some price data could not be displayed");
-                    //console.log(ourElems);
-                    //console.log(JSON.stringify(theirs[bestMatch]));
-                    //console.log(JSON.stringify(ours[i]));
-                    //console.log("\n");
+                    alert("Some price data could not be displayed");
                 }
                 
                 var loopUpTo = Math.min(theirs[bestMatch]["vs_price"][type].length, ourElems.length);
                 for(var x = 0; x < loopUpTo; x++) {
                     if(type == "text") {
-                        var orderDiff = ours[i].index - theirs[bestMatch].index;
-                        var orderDiffStr = "" + orderDiff;
-                        if(orderDiff > 0) {
-                            orderDiffStr = "+" + orderDiffStr;
-                        }
-                        var ourPrice = new Price(ours[i]["vs_price"][type][x]);
-                        var theirPrice = new Price(theirs[bestMatch]["vs_price"][type][x]);
-                        var priceClass = "serverSame";
-                        if(ourPrice.dollarValue() > theirPrice.dollarValue()) {
-                            priceClass = serverLess;
-                        }
-                        else if(ourPrice.dollarValue < theirPrice.dollarValue()) {
-                            priceClass = serverMore;
-                        }
-                        
-                        $(ourElems[x]).append("<br /><div class='server'><sup>" + orderDiffStr + "</sup><div class='serverPrice " + priceClass + "'>" + theirs[bestMatch]["vs_price"][type][x] + "</div></div>");
-                        
+                        $(ourElems[x]).append("<br /><div class='serverPrice'>" + theirs[bestMatch]["vs_price"][type][x] + "</div>");
                     }
                     else {
                         // TODO: not sure how we want to handle non-text price elements; we probably shouldn't allow them
@@ -107,10 +83,6 @@ function merge(ours, theirs, labels) {
         }
         else {
             console.log("WE COULD NOT FIND A MATCH FOR OUR " + JSON.stringify(ours[i]));
-            var ourElems = $(".vs_price", "[vsid=" + ours[i].vsid + "]");
-            for(var x = 0; x < ourElems.length; x++) {
-                $(ourElems[x]).wrap("<div class='clientOnly'></div>");
-            }
         }
     }
     
@@ -123,70 +95,34 @@ function merge(ours, theirs, labels) {
     }
     
     addClonedElements(ours, toClone, labels);
-    
-    $("#vs_overlay").fadeOut(500);
-    $("#vs_overlay").remove();
-    $("body").removeClass("vs_overlay");
 }
 
 function findBestMatch(ours, theirs, index, labels) {
-    //console.log("The best match search for " + index + " has begun in earnest.");
-    var mKeys = []; // mandatory keys
+    var keys = [];
     for(var i = 0; i < labels.length; i++) {
         var key = Object.keys(labels[i])[0];
         if(key != "price" && key != "vs_price") {
-            mKeys.push(Object.keys(labels[i])[0]);
+            keys.push(Object.keys(labels[i])[0]);
         }
     }
-    //console.log(keys);
-    //console.log("Not only that, but the search for " + index + " is actually succeeding.");
-    var ourKeys = _.intersection(mKeys, Object.keys(ours[index]));
-    ourKeys = ourKeys.sort();
     
     var matches = [];
     for(var i = 0; i < theirs.length; i++) {
-        // do they have the same set of mandatory keys?
-        var theirKeys = _.intersection(Object.keys(theirs[i]), keys);
-        theirKeys = theirKeys.sort();
-        var keysGood = true;
-        if(theirKeys.length == ourKeys.length) {
-            for(var x = 0; x < ourKeys.length; x++) {
-                if(theirKeys[x] != ourKeys[x]) {
-                    keysGood = false;
-                    break;
-                }
-            }
-        }
-        var keys = mKeys;
-        
-        var allKeysMatch = keysGood;
-        if(typeof theirs[i]["used"] == "undefined" && allKeysMatch) 
+        var allKeysMatch = true;
+        if(typeof theirs[i]["used"] == "undefined") 
         {
             for(var j = 0; j < keys.length; j++) {
+                //console.log(JSON.stringify(theirs[index]));
                 var theirData = theirs[i][keys[j]];
-                var ourData = ours[index][keys[j]]; 
+                var ourData = ours[index][keys[j]];  
                 
-                if(typeof ourData == "undefined") {
-                    allKeysMatch = false;
-                    break;
-                }
-                
-                //onsole.log(JSON.stringify(theirData) + "\n" + JSON.stringify(ourData) + "\n");
                 for(var type in theirData) {
-                    if(typeof ourData[type] == "undefined") {
-                        allKeysMatch = false;
-                        break;
-                    }
-                    
                     if(theirData[type].length == ourData[type].length) {
-                        //console.log(JSON.stringify(theirData[type]) + "\n" + JSON.stringify(ourData[type]) + "\n");
                         var matchNum = 0;
-                        var usedIndeces = new Set();
                         for(var x = 0; x < ourData[type].length; x++) {
                             for(var y = 0; y < theirData[type].length; y++) {
-                                if(ourData[type][x] == theirData[type][y] && !usedIndeces.has(y)) {
+                                if(ourData[type][x] == theirData[type][y]) {
                                     matchNum++;
-                                    usedIndeces.add(y);
                                 }
                             }
                         }
@@ -213,7 +149,6 @@ function findBestMatch(ours, theirs, index, labels) {
             matches.push(i);
         }
     }
-    //console.log(matches);
 
     var minPenalty = 50000000000;
     var minIndex = -1;
@@ -253,7 +188,7 @@ function findBestMatch(ours, theirs, index, labels) {
             }
         }
     }
-    //console.log("SELECTED: " + minIndex);
+    
     //alert(minIndex);
     return minIndex;
 }
@@ -274,7 +209,7 @@ function addClonedElements(ours, toClone, labels) {
         var cloneID = toClone[i]["vsid"];
         
         var donor = cloneElement(toClone[i], ours, labelSet);
-        //console.log(donor);
+        console.log(donor);
         
         var clone = $(getContainer(donor["vsid"])).clone();
         clone.attr("vsid", cloneID);
@@ -296,7 +231,7 @@ function addClonedElements(ours, toClone, labels) {
         });
         toHide.css("display", "none");
         clone.insertAfter(lastContainer);
-        //console.log(clone);
+        console.log(clone);
         
         var vs_elems = findElement([{"class-":"+vs_"}], clone, true);
         $(vs_elems).attr("vsid", cloneID);
@@ -317,11 +252,11 @@ function addClonedElements(ours, toClone, labels) {
                                 $(matches[m]).text(infoArr[type][m]);
                             }
                             else {
-                                $(matches[m]).attr(type, infoArr[type][m]);
+                                $(matches[m]).attr("type", infoArr[type][m]);
                             }
                         }
                         else {
-                            //alert("Notice: Some server prices not displayed");
+                            alert("Notice: Some server prices not displayed");
                             $(matches[m]).hide();
                         }
                     }
@@ -347,7 +282,7 @@ function cloneElement(elem, donors, keySet) {
             var indexInDonor = donorKeys.indexOf(elemKeys[k]);
             if(indexInDonor >= 0) {
                 for(type in elem[elemKeys[k]]) {
-                    // do the numbers of each element match? TODO: DEBUG THIS!!!!
+                    // do the numbers of each element match?
                     penalty += Math.abs(elem[elemKeys[k]][type].length - donors[i][donorKeys[indexInDonor]][type].length);
                 }
             }
@@ -365,12 +300,3 @@ function cloneElement(elem, donors, keySet) {
     console.log("The best donor lives at index " + bestDonorIndex);
     return donors[bestDonorIndex];
 }
-
-chrome.runtime.onMessage.addListener(
-function(request, sender, sendResponse) {
-    if(typeof window.merge_called == "undefined") {
-        //alert("THE MERGE BEGINS");
-        window.merge_called = true;
-        merge(request.ours, request.theirs, request.labels);
-    }
-});
