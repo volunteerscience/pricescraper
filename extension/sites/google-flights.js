@@ -6,7 +6,7 @@ if(typeof window.vs_scraper == "undefined") {
 function vs_init() {
     var showMoreFlights = [{"contents-1000":"[+lt]show"}, {"contents-1000":"[+lt]longer"}, {"contents-1000":"[+lt]expensive"}];
     var hideMoreFlights = [{"contents-1000":"[+lt]hide"}, {"contents-1000":"[+lt]longer"}, {"contents-1000":"[+lt]expensive"}];
-
+    
     waitFor(showMoreFlights, 1000, function(moreFlightsButton) {
         $(moreFlightsButton).trigger("click");
         waitFor(hideMoreFlights, 1000, flightsLoaded);
@@ -14,29 +14,14 @@ function vs_init() {
 }
 
 function flightsLoaded(lessFlightsButton, done) {
-    var round = findElement([{"contents-20":"+round"}]);
-    var prices = findElement([{"contents-20":"+$"}, {"sibling-":round}]);
-    var superStruct = findSuperStructure(prices);
+    vs_init_ui();
+}
+
+function vs_continue() {
+    var jsonBlock = 
+        [{"desc":[{"chain":[{"contents-20":"+$"},{"sibling-":{"chain":[{"contents-20":"+trip"}]}}]},{"name":"temp_prices"}]},{"desc":[{"super":{"ref":"temp_prices"}},{"name":"vs_container","vsid":"generate","tag":true}]},{"desc":[{"chain":[{"contents-20":"+$"},{"tag-":"=div"}]},{"name":"vs_price","deep":true,"ctxt":{"ref":"vs_container"},"vsid":"generate","tag":true,"grab":"text","mandatory":true,"cascade":true}]},{"desc":[{"chain":[{"contents-20":"+trip"}]},{"name":"vs_trip_type","deep":true,"ctxt":{"ref":"vs_container"},"vsid":"generate","grab":"text","mandatory":true,"cascade":true,"tag":true}]},{"desc":[{"chain":[{"contents-20":"+stop"}]},{"name":"vs_stop_type","deep":true,"ctxt":{"ref":"vs_container"},"vsid":"generate","grab":"text","mandatory":true,"cascade":true,"tag":true}]},{"desc":[{"chain":[{"nav-":"parent,prev,child"}]},{"ctxt":{"ref":"vs_stop_type"},"cascade":true,"name":"vs_duration","vsid":"generate","tag":true,"grab":"text","mandatory":true}]},{"desc":[{"union":[{"union":[{"chain":[{"contents-30":"+am – "}, {"visibility-":"visible"}]},{"chain":[{"contents-30":"+pm – "}, {"visibility-":"visible"}]}]},{"chain":[{"contents-30":"+similar flights"},{"nav-":"parent"}]}]},{"name":"vs_timestamp","ctxt":{"ref":"vs_container"},"cascade":true,"vsid":"generate","tag":true,"grab":"text","mandatory":true,"deep":true}]},{"desc":[{"chain":[{"nav-":"next"}]},{"name":"vs_airline","ctxt":{"ref":"vs_timestamp"},"cascade":true,"vsid":"generate","tag":true,"grab":"text","mandatory":true}]},{"desc":[{"chain":[{"nav-":"prev"}]},{"name":"vs_airline_logo","ctxt":{"ref":"vs_timestamp"},"vsid":"generate","tag":true,"grab":"src","mandatory":false,"cascade":true}]},{"desc":[{"chain":[{"nav-":"next"}]},{"name":"vs_airports","ctxt":{"ref":"vs_duration"},"vsid":"generate","grab":"text","mandatory":true,"cascade":true,"tag":true}]},{"desc":[{"chain":[{"nav-":"next"}]},{"name":"vs_layover","ctxt":{"ref":"vs_stop_type"},"vsid":"generate","grab":"text","mandatory":false,"tag":true,"cascade":true}]}];
     
-    var superfluous1 = findElement([{"contents-1000":"[+lt]similar"}], superStruct);
-    var superfluous2 = findElement([{"contents-1000":"[+lt]date tip"}], superStruct);
-    var superfluous = _.union(superfluous1, superfluous2);
-    var usefulSuperStruct = _.difference(superStruct, superfluous);
+    processJSON(jsonBlock);
     
-    /* STYLE THE SUPERFLUOUS ELEMENTS */
-    $(superfluous).css("color", "red");
-    $(superfluous).css("display", "none");
-    
-    tagDescriptors(usefulSuperStruct, [ 
-                                        { "name":"duration", "desc":[{"contents-50":"+ – "}] },
-                                        { "name":"stops", "desc":[{"contents-50":"+stop"}] },
-                                        { "name":"airline", "desc":[{"sibling-":{"ref":"duration"}}, {"below-":{"ref":"duration"}}] },
-                                        { "name":"logo", "desc":[{"sibling-":{"ref":"duration"}}, {"left-":{"ref":"duration"}}] },
-                                        { "name":"elapsed", "desc":[{"nav-":"parent,prev,child"}], "matches":"stops" },
-                                        { "name":"airports", "desc":[{"nav-":"next"}], "matches":"elapsed" },
-                                        { "name":"type", "desc":[{"nav-":"next"}], "matches":"price" },
-                                        { "name":"layovers", "desc":[{"nav-":"next"}], "matches":"stops" }
-                                                                                                                                                ]);
-    
-    vs_scraper_done({"mandatory_labels": ["duration", "stops", "airline"], "data_labels": ["logo", "elapsed", "airports", "type", "layovers"]}, ["eo"]);
+    vs_scraper_done(labels, ["eo"]);
 }

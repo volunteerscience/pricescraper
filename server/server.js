@@ -35,8 +35,12 @@ app.listen(PORT, function() {
     console.log("Server listening on: http://localhost:%s", PORT);
 });
 
-var supportedSites = [{"site": "https://www.google.com/flights/", "script":"google-flights"},
-                      {"site": "https://www.amazon.com/s/", "script":"amazon"}];
+/*var supportedSites = [{"site": "https://www.google.com/flights/", "script":"google-flights"},
+                      {"site": "https://www.amazon.com/s/", "script":"amazon"}];*/
+
+var supportedSites = [{"site": "https://www.google.com/flights/", "script":"google-flights", "name": "Google Flights"},
+                      {"site": "https://www.amazon.com/s/", "script":"amazon", "name": "Amazon"},
+                      {"site": "https://www.priceline.com/stay/", "script":"priceline", "name": "Priceline"}];
 
 function scrape(result, url) {
     var scraperScript = null;
@@ -52,12 +56,14 @@ function scrape(result, url) {
     }
     
     console.log("scraping");
-    var page = new Horseman({'timeout':15000});
+    var page = new Horseman({'timeout':30000});
     
     page
-        .open(/*'https://www.google.com/flights/#search;f=BOS;t=JFK,EWR,LGA;d=2016-06-26;r=2016-06-30'*/url)
+        .open(url)
         .injectJs("scripts/underscore.js")
         .injectJs("scripts/sel.js")
+        .injectJs("scripts/parse.js")
+        .injectJs("scripts/beach.js")
         .injectJs("scripts/process_data.js")
         .injectJs("sites/" + scraperScript + ".js")
         .evaluate(function(done) {
@@ -68,16 +74,18 @@ function scrape(result, url) {
                     done(null, getVSData());
                 }
             }, 500);
+        
+            //var nifty = findElement([{"contents-1000":"[+lt]show"}, {"contents-1000":"[+lt]longer"}, {"contents-1000":"[+lt]expensive"}]);
+            //done(null, nifty.length);
         })
         .then(function(msg) {
-            //console.log("HELLO WORLD");
-            //console.log(msg);
+            //console.log("LENGTH: " + msg);
             console.log("parsing complete");
             result.send(JSON.stringify(msg));
-            //res.send(JSON.stringify({'success':'nifty'}));
-            //console.log(msg);
             page
                 .screenshot("test6.png")
                 .close();
         });
 }
+
+//scrape(null, "https://www.google.com/flights/#search;f=BOS;t=JFK,EWR,LGA;d=2016-07-24;r=2016-07-28;")
