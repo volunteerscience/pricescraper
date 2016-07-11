@@ -14,7 +14,12 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                 let siteName = supportedSites[scriptInd].name;
                 chrome.storage.local.get(siteName, function(obj) {
                     if(typeof obj[siteName] == "undefined" || (typeof obj[siteName] != "undefined" && obj[siteName] == "enabled")) {
-                        executeContentScripts(scriptInd, tabId);
+                        //executeContentScripts(scriptInd, tabId);
+                        chrome.tabs.executeScript(tabId, {"file": "scripts/marker.js"}, function(res) {
+                            if(res[0] == true) {
+                                executeContentScripts(scriptInd, tabId);
+                            }
+                        });
                     }
                 });
             }
@@ -32,41 +37,37 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 });
 
 function executeContentScripts(scriptInd, tabId) {
-    chrome.tabs.executeScript(tabId, {"file": "scripts/jquery.js"}, function() {
-        chrome.tabs.insertCSS(tabId, {"file": "css/bootstrap.css"}, function() {
-            
-            chrome.tabs.insertCSS(tabId, {"file": "css/overlay.css"});
-            chrome.tabs.executeScript(tabId, {"file": "scripts/bootstrap.js"}, function() {
-                chrome.tabs.executeScript(tabId, {"file": "scripts/underscore.js"});
-                chrome.tabs.executeScript(tabId, {"file": "scripts/parse.js"});
-                chrome.tabs.executeScript(tabId, {"file": "scripts/sel.js"});
-                chrome.tabs.executeScript(tabId, {"file": "scripts/beach.js"}); // experimental
-                chrome.tabs.executeScript(tabId, {"file": "scripts/process_data.js"});
-                chrome.tabs.executeScript(tabId, {"file": "scripts/merge.js"});
-
-                chrome.tabs.executeScript(tabId, {"file": "scripts/interface.js"});
-
-                chrome.tabs.executeScript(tabId, {"file": "sites/" + supportedSites[scriptInd].script + ".js"});
-            }); 
-            //updatePopup();
-        });
+    var scriptList = [
+        "scripts/marker.js", "css/bootstrap.css",  "css/overlay.css", "scripts/jquery.js", "scripts/bootstrap.js", "scripts/underscore.js", "scripts/parse.js",
+        "scripts/sel.js", "scripts/beach.js", "scripts/process_data.js", "scripts/merge.js", "scripts/interface.js", "sites/" + supportedSites[scriptInd].script + ".js"
+    ];
+    injectContentScript(scriptList, 0, tabId, function() {
+        console.log("script injection successful");
     });
 }
 
-/*function updatePopup() {
-    alert("trying to change the popup");
-    var views = chrome.extension.getViews({type: "popup"});
-    for (var i = 0; i < views.length; i++) {
-        views[i].document.getElementById('awesome').innerHTML="Sexy";
+function injectContentScript(list, ind, tabId, callback) { 
+    if(ind < list.length) {
+        if(list[ind].substr(-3) == "css") {
+            chrome.tabs.insertCSS(tabId, {"file": list[ind]}, function() {
+                injectContentScript(list, ind + 1, tabId);   
+            });
+        }
+        else if(list[ind].substr(-2) == "js") {
+            chrome.tabs.executeScript(tabId, {"file": list[ind]}, function() {
+                injectContentScript(list, ind + 1, tabId); 
+            });
+        }
+
+        if(ind == 0) {
+            callback();
+        }
     }
-}*/
+}
 
 // receive messages
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.hasOwnProperty('vs_prices')) { // from the hook
-        //alert("labels: " + request.labels.mandatory_labels[0]);
-        console.log("HERE IS THE REQUEST");
-        console.log(request);
         requestPriceCompare(request, sender.tab.id);
     }
 });
@@ -78,7 +79,7 @@ function requestPriceCompare(data, tabID) {
     xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhttp.onload = function() {
         var response = xhttp.response;
-        chrome.extension.getBackgroundPage().console.log('the result is');
+        chrome.extension.getBackgroundPage().console.log("THEIRS");
         console.log(response);
         console.log("OURS");
         console.log(data.vs_prices);
