@@ -89,11 +89,13 @@ function merge(ours, theirs, labels) {
                         var ourPrice = new Price(ours[i]["vs_price"][type][x]);
                         var theirPrice = new Price(theirs[bestMatch]["vs_price"][type][x]);
                         var priceClass = "serverSame";
+                        
+                        //console.log(ourPrice.dollarValue() + "::" + theirPrice.dollarValue());
                         if(ourPrice.dollarValue() > theirPrice.dollarValue()) {
-                            priceClass = serverLess;
+                            priceClass = "serverLess";
                         }
-                        else if(ourPrice.dollarValue < theirPrice.dollarValue()) {
-                            priceClass = serverMore;
+                        else if(ourPrice.dollarValue() < theirPrice.dollarValue()) {
+                            priceClass = "serverMore";
                         }
                         
                         $(ourElems[x]).append("<br /><div class='server'><sup>" + orderDiffStr + "</sup><div class='serverPrice " + priceClass + "'>" + theirs[bestMatch]["vs_price"][type][x] + "</div></div>");
@@ -109,7 +111,8 @@ function merge(ours, theirs, labels) {
             console.log("WE COULD NOT FIND A MATCH FOR OUR " + JSON.stringify(ours[i]));
             var ourElems = $(".vs_price", "[vsid=" + ours[i].vsid + "]");
             for(var x = 0; x < ourElems.length; x++) {
-                $(ourElems[x]).wrap("<div class='clientOnly'></div>");
+                var wrapper = $("<div class='cientOnly' style='display:inline-block; border: 2px dotted #000; border-color:crimson; border-radius: 3px'></div>");
+                $(ourElems[x]).wrap(wrapper);
             }
         }
     }

@@ -5,8 +5,8 @@ if(typeof window.vs_scraper == "undefined") {
 
 function vs_init() {
     waitFor([{"class-":"=next"}, {"tag-":"=button"}], 1000, function() {
-        vs_continue();
-        //vs_init_ui();
+        //vs_continue();
+        vs_init_ui();
     });
 }
 

@@ -43,13 +43,13 @@
     padding: 2px;
 }
 
-.clientOnly {
+/*.clientOnly {
     display: inline-block;
     border-style: solid;
     border-color: crimson;
     border-left: 1px;
     border-right: 1px;
-}
+}*/
 
 .serverLess {
     color: limegreen;
@@ -61,4 +61,12 @@
 
 .serverSame {
     color: blue;
+}
+
+sup {
+    font-size: 0.6em !important;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline !important;
+    top: -0.5em;
 }
