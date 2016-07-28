@@ -1,3 +1,4 @@
+#!/bin/bash
 today=`date +%Y-%m-%d.%H:%M:%S`
 nodejs server.js > ~/pricecompare_$today.log 2>&1 
 
