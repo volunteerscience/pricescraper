@@ -1,4 +1,7 @@
-Reboot Server:
+Reboot server with supervise:
+  sudo supervise /home/ubuntu/pricescraper &
+
+Old way (don't use):
 
    sudo killall nodejs
    sudo nodejs server.js > ~/server_log 2>&1 &
