@@ -1,5 +1,5 @@
 Reboot server with supervise:
-  sudo supervise /home/ubuntu/pricescraper &
+  sudo supervise /home/ubuntu/pricescraper/server &
 
 Old way (don't use):
 
