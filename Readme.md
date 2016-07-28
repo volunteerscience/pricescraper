@@ -1,5 +1,16 @@
-Reboot server with supervise:
-  sudo supervise /home/ubuntu/pricescraper/server &
+Reboot Server:
+```
+sudo killall nodejs
+```
+
+Stop Supervise:
+```
+sudo killall supervise
+```
+Reboot Supervise:
+```
+sudo supervise /home/ubuntu/pricescraper/server &
+```
 
 Old way (don't use):
 
