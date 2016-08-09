@@ -241,7 +241,7 @@ function findBestMatch(ours, theirs, index, labels) {
                 var minDiff = 50000000000;
 
                 for(var y = 0; y < ourPrices[type].length; y++) {
-                    var ourPrice = new Price(ourPrices[type][x]);
+                    var ourPrice = new Price(ourPrices[type][y]);
                     var diff = Math.abs(theirPrice.dollarValue() - ourPrice.dollarValue());
                     if(diff < minDiff) {
                         minDiff = diff;
