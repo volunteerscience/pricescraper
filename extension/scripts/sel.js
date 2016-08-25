@@ -49,31 +49,86 @@ function findElement(desc, matchArr, deep) {
                 matches = _.intersection(matches, match);
             }
         }
+        else if(prefix == "deepest") {
+            if(elem[e] == true) {
+                var newMatches = [];
+                for(var x = 0; x < matches.length; x++) {
+                    var child = $(matches[x]).find("*");
+                    var hasChildInMatches = false;
+                    for(var y = 0; y < child.length; y++) {
+                        if(matches.indexOf(child[y]) >= 0) {
+                            hasChildInMatches = true;
+                            break;
+                        }
+                    }
+                    if(!hasChildInMatches) {
+                        newMatches.push(matches[x]);
+                    }
+                }
+                matches = newMatches;
+            }
+        }
         if(prefix == "id") {
             // searchForBase = false;
             var s_id = elem[e].substr(1);
             var op = elem[e][0];
             
             var match = null;
-            if(op == "=") {
+            if(elem[e][0] == "[") {
+                op = elem[e][1];
+                var opGroup = elem[e].substring(2, elem[e].indexOf("]"));
+                s_id = applyOpGroup(elem[e].substr(elem[e].indexOf("]") + 1), opGroup);
+                match = $("*").filter(function() {
+                    var currID = $(this).attr("id");
+                    if(typeof currID != "undefined") {
+                        if(op == "+") { 
+                            return applyOpGroup(currID, opGroup).indexOf(s_id) >= 0;
+                        }
+                        else if(op == "=") {
+                            return applyOpGroup(currID, opGroup) == s_id;
+                        }
+                    }
+                    return false;
+                });
+            }
+            else if(op == "=") {
                 match = $("#" + s_id);
             }
             else if (op == "+") {
                 match = $("*[id*='" + s_id + "']");
             }
             if(matches.length == 0) {
-                matches = match;
+                matches = normalize(match);
             }
             else {
-                matches = _.intersection(matches, match);
+                matches = _.intersection(matches, normalize(match));
             }
         }
         else if(prefix == "class") {
             var s_class = elem[e].substr(1);
             var op = elem[e][0];
+        
+            var opGroup = "";
             
             var match = null;
-            if(op == "=") {
+            if(elem[e][0] == "[") {
+                op = elem[e][1];
+                var opGroup = elem[e].substring(2, elem[e].indexOf("]"));
+                s_class = applyOpGroup(elem[e].substr(elem[e].indexOf("]") + 1), opGroup);
+                match = $("*").filter(function() {
+                    var currClass = $(this).attr("class");
+                    if(typeof currClass != "undefined") {
+                        if(op == "+") { 
+                            return applyOpGroup(currClass, opGroup).indexOf(s_class) >= 0;
+                        }
+                        else if(op == "=") {
+                            return applyOpGroup(currClass, opGroup) == s_class;
+                        }
+                    }
+                    return false;
+                });
+            }
+            else if(op == "=") {
                 match = $("." + s_class);
             }
             else if (op == "+") {
@@ -82,11 +137,11 @@ function findElement(desc, matchArr, deep) {
             //console.log(match);
             
             if(matches.length == 0) {
-                matches = match;
+                matches = normalize(match);
             }
             else {
-                var combined = _.intersection(matches, match);
-                matches = _.intersection(matches, match);
+                //var combined = _.intersection(matches, match);
+                matches = _.intersection(matches, normalize(match));
             }
         }
         else if(prefix == "prop") {
@@ -95,26 +150,45 @@ function findElement(desc, matchArr, deep) {
             var propVal = elem[e].substr(1);
             var op = elem[e][0];
             
-            //console.log(prop + ", " + propVal + ": " + op);
-
-            var match = $("[" + prop + "]");
+            var match = [];
             var filteredMatch = [];
-            for(var i = 0; i < match.length; i++) {
-                var curr = $(match[i]);
-                //console.log(curr.attr(prop));
-                if(curr.attr(prop) == propVal) {
-                    filteredMatch.push(curr[0]);
-                }
-                else if(curr.attr(prop).indexOf(propVal) >= 0 && op == "+") {
-                    filteredMatch.push(curr[0]);
-                }
+            
+            if(elem[e][0] == "[") {
+                op = elem[e][1];
+                var opGroup = elem[e].substring(2, elem[e].indexOf("]"));
+                propVal = applyOpGroup(elem[e].substr(elem[e].indexOf("]") + 1), opGroup);
+                filteredMatch = $("*").filter(function() {
+                    var currProp = $(this).attr(prop);
+                    if(typeof currProp != "undefined") {
+                        if(op == "+") { 
+                            return applyOpGroup(currProp, opGroup).indexOf(propVal) >= 0;
+                        }
+                        else if(op == "=") {
+                            return applyOpGroup(currProp, opGroup) == propVal;
+                        }
+                    }
+                    return false;
+                });
             }
+            else
+            {
+                filteredMatch = $("[" + prop + "]").filter(function() {
+                    if(op == "=" && $(this).attr(prop) == propVal) {
+                        return true;
+                    }
+                    else if(op == "+" && $(this).attr(prop).indexOf(propVal) >= 0) {
+                        return true;
+                    }
+                    return false;
+                });
+            }
+            
             if(matches.length == 0) {
-                matches = filteredMatch;
+                matches = normalize(filteredMatch);
             }
             else {
-                matches = _.intersection(matches, filteredMatch);
-            }
+                matches = _.intersection(matches, normalize(filteredMatch));
+            } 
         }
         else if(prefix == "contents") {
             var txt = elem[e].substr(1);
@@ -138,11 +212,16 @@ function findElement(desc, matchArr, deep) {
                 matches = findText(txt, op, opGroup, len, matches);
             }
             else {
+                //console.log("HEHEHEHE");
+                //console.log(matches);
                 var match = [];
                 for(var x = 0; x < matches.length; x++) {
-                    var currLen = $(matches[x]).text().length;
+                    var currLen = $(matches[x]).text().trim().length;
                     if(len == null || (len != null && currLen < len)) {
+                        //console.log("OKAY....");
                         var text = applyOpGroup($(matches[x]).text(), opGroup);
+                        //console.log(matches[x]);
+                        //console.log($(matches[x]).text() + ", " + txt);
                         if(text == txt) {
                             match.push(matches[x]);
                         }
@@ -329,13 +408,21 @@ function findElement(desc, matchArr, deep) {
     return matches;
 }
 
+function normalize(fakeArr) {
+    var realArr = [];
+    for(var i = 0; i < fakeArr.length; i++) {
+        realArr.push(fakeArr[i]);
+    }
+    return realArr;
+}
+
 function applyOpGroup(txt, opGroup) {
     opGroup = opGroup.toLowerCase();
     if(opGroup.indexOf("l") >= 0) {
         txt = txt.toLowerCase();
     }
     if(opGroup.indexOf("t") >= 0) {
-        txt = txt.trim();
+        txt = txt.replace(/\s\s+/g, ' ').trim();
     }
     
     return txt;

@@ -17,7 +17,7 @@ function generateContainer(type, flex_dir) {
     return $(container);
 }
 
-function drawJSON(jsonArr, master) {
+function drawJSON(jsonArr, holder) {
     var idPrefix = randomString(20) + "_arryID_";
     
     for(let i = 0; i < jsonArr.length; i++) {
@@ -27,12 +27,63 @@ function drawJSON(jsonArr, master) {
         
         bindArrayEvents(container, idPrefix);
         
-        master.append(container);
+        holder.append(container);
         resolveType(jsonArr[i], container.find(".content")).draw();
     }
 }
 
+// Note, use this version of the function for iframes
+// for iframes, this is the ONLY CHANGE
+// use the commented version if it's not an iframe
 function bindArrayEvents(container, idPrefix) {
+    container.find(".destroy").click(function() {
+        var bf = $("#builderFrame").contents().find("#holder").contents();
+        var index = parseInt(container[0].id.substr(28));
+        
+        if(index > 0) {
+            var toChange = [];
+            for(var x = index + 1; x < jsonArr.length; x++) {
+                toChange.push(bf.filter(function() { return $(this).attr("id") == idPrefix + x; }));
+            }
+            for(var x = 0; x < toChange.length; x++) {
+                var oldIndex = parseInt(toChange[x].attr("id").substr(28));
+                toChange[x].attr("id", idPrefix + (oldIndex - 1));
+            }
+            jsonArr.splice(index, 1);
+
+            container.remove();
+        }
+    });
+    
+    container.find(".addElement").click(function() {
+        var bf = $("#builderFrame").contents().find("#holder").contents();
+        
+        var index = parseInt(container[0].id.substr(28)) + 1;
+        var toChange = [];
+        for(var x = index; x < jsonArr.length; x++) {
+            toChange.push(bf.filter(function() { return $(this).attr("id") == idPrefix + x; }));
+        }
+        for(var x = 0; x < toChange.length; x++) {
+            var oldIndex = parseInt(toChange[x].attr("id").substr(28));
+            toChange[x].attr("id", idPrefix + (oldIndex + 1));
+        }
+        
+        let newContainer = generateContainer("array", "flex-vertical");
+        newContainer.find(".hide").removeClass("hide").addClass("addElement").html('<i class="material-icons">add</i>');
+        newContainer.attr("id", idPrefix + index);
+        var sibling = bf.filter(function() { return $(this).attr("id") == idPrefix + (index - 1); });
+        newContainer.insertAfter(sibling);
+        
+        var newElement = {};
+        jsonArr.splice(index, 0, newElement);
+        resolveType(newElement, newContainer.find(".content")).draw();
+        
+        bindArrayEvents(newContainer, idPrefix);
+    });
+}
+
+/* NOTE: USE THIS VERSION FOR NON IFRAMES ONLY CHANGE */
+/*function bindArrayEvents(container, idPrefix) {
     container.find(".destroy").click(function() {
         var index = parseInt(container[0].id.substr(28));
         
@@ -74,7 +125,7 @@ function bindArrayEvents(container, idPrefix) {
         
         bindArrayEvents(newContainer, idPrefix);
     });
-}
+}*/
 
 function SetOp(obj, ctx, container) {
     this.obj = obj;
@@ -112,7 +163,7 @@ function resolveType(obj, ctx, container) {
     else if(type == "super") {
         res = new UniOp(obj, ctx, container);
     }
-    else if(type == "union" || type == "inter" || type == "diff") {
+    else if(type == "union" || type == "inter" || type == "sinter" || type == "diff") {
         res = new SetOp(obj, ctx, container);
     }
             
@@ -162,48 +213,15 @@ SetOp.prototype.draw = function() {
     var ctx = this.container.find(".content");
     
     if(!Array.isArray(set1)) {
-        /*var set1Obj = null;
-        
-        if(Object.keys(set1).length == 0) {
-            set1Obj = new Slate(set1, ctx);
-        }
-        else if(set1.hasOwnProperty("desc")) {
-            set1Obj = new Desc(set1, ctx);    
-        }
-        else if(set1.hasOwnProperty("chain")) {
-            set1Obj = new Chain(set1, ctx);  
-        }
-        else {
-            set1Obj = new SetOp(set1, ctx);
-        }
-        
-        set1Obj.draw();*/
         resolveType(set1, ctx).draw();
     }
     if(!Array.isArray(set2)) {
-        /*var set2Obj = null;
-        var triggerDraw = true;
-        
-        if(Object.keys(set2).length == 0) {
-            set2Obj = new Slate(set2, ctx);
-        }
-        else if(set2.hasOwnProperty("desc")) {
-            set2Obj = new Desc(set2, ctx);    
-        }
-        else if(set2.hasOwnProperty("chain")) {
-            set2Obj = new Chain(set2, ctx);  
-        }
-        else {
-            set2Obj = new SetOp(set2, ctx);
-        }
-        
-        set2Obj.draw();*/
         resolveType(set2, ctx).draw();
     }
 }
 
 SetOp.prototype.drawEmpty = function(setNum) {
-    var types = generateSelect(["", "union", "diff", "inter", "desc", "chain"]);
+    var types = generateSelect(["", "union", "diff", "inter", "sinter", "desc", "chain"]);
     
     types.change(function() {
     });
@@ -541,7 +559,7 @@ function Slate(obj, ctx, container) {
 
 Slate.prototype.draw = function() {
     this.container.find(".arrow").removeClass("arrow").addClass("arrow-p");
-    var types = generateSelect(["", "union", "diff", "inter", "desc", "chain", "ref", "super"]);
+    var types = generateSelect(["", "union", "diff", "inter", "sinter", "desc", "chain", "ref", "super"]);
     
     var _this = this;
     types.change(function() {
@@ -575,7 +593,7 @@ Slate.prototype.draw = function() {
             var toDraw = new UniOp(_this.obj, _this.ctx, _this.container);
             toDraw.draw();
         }
-        else if(chosen == "union" || chosen == "diff" || chosen == "inter") {
+        else if(chosen == "union" || chosen == "diff" || chosen == "inter" || chosen == "sinter") {
             _this.container.find(".flex-horizontal").removeClass("flex-horizontal").addClass("flex-vertical");
             _this.obj[chosen] = [{}, {}];
             var toDraw = new SetOp(_this.obj, _this.ctx, _this.container);
@@ -852,7 +870,7 @@ Chain.prototype.blankLink = function(id) {
     var header =  $(headerString);
     
     var select = generateSelect(["id", "class", "prop", "contents", "tag", "parent", "child",
-                                    "sibling", "nav", "left", "right", "above", "below", "distance", "visibility"]);
+                                    "sibling", "nav", "left", "right", "above", "below", "distance", "visibility", "deepest"]);
     
     var _this = this;
     select.change(function(e) {
@@ -891,7 +909,7 @@ Chain.prototype.specialize = function(type, link, hasContent) {
         body.append(equality);
         body.append(text);
         
-        equality.change(function() { _this.serializeLink(link) });
+        //equality.change(function() { _this.serializeLink(link) });
         text.keyup(function() { _this.serializeLink(link) });
         
         if(hasContent) {   
@@ -903,21 +921,26 @@ Chain.prototype.specialize = function(type, link, hasContent) {
         }
     }
     else if(type == "class") {
-        var equality = generateSelect(["=", "+"]);
-        equality.css("width:15%");
-        equality.css("margin:2px");
+        var equality = $("<input type='text' style='width:15%; margin:2px' />");
         equality.addClass("classOpVal");
         var text = $("<input type='text' class='classVal' style='width:70%; margin:2px'/>");
         body.append(equality);
         body.append(text);
         
-        equality.change(function() { _this.serializeLink(link) });
+        equality.keyup(function() { _this.serializeLink(link) });
         text.keyup(function() { _this.serializeLink(link) });
         
         if(hasContent) {   
             var val = this.chain[linkIndex]["class-"];
             var op = val[0];
             var className = val.substr(1);
+            
+            if(op == "[") {
+                var closeIndex = val.indexOf("]");
+                op = val.substr(0, closeIndex + 1);
+                className = val.substr(closeIndex + 1);
+            }
+            
             equality.val(op);
             text.val(className);
         }
@@ -941,9 +964,10 @@ Chain.prototype.specialize = function(type, link, hasContent) {
         }
     }
     else if(type == "contents") {
-        var equality = generateSelect(["=", "+", "^"]);
-        equality.css("width:15%");
-        equality.css("margin:2px");
+        //var equality = generateSelect(["=", "+", "^"]);
+        var equality = $("<input type='text' style='width:15%; margin:2px' />");
+        //equality.css("width:15%");
+        //equality.css("margin:2px");
         equality.addClass("contentsOpVal");
         var text = $("<input type='text' class='contentsVal' style='width:70%; margin:2px'/>");
         var length = $("<input type='text' class='lengthVal' style='width:30%; margin:2px' placeholder='length' />");
@@ -962,6 +986,12 @@ Chain.prototype.specialize = function(type, link, hasContent) {
             var val = this.chain[linkIndex][name];
             var op = val[0];
             var match = val.substr(1);
+            
+            if(op == "[") {
+                var closeIndex = val.indexOf("]");
+                op = val.substr(0, closeIndex + 1);
+                match = val.substr(closeIndex + 1);
+            }
             
             if(lengthVal.length > 0) {
                 length.val(lengthVal);
@@ -992,9 +1022,34 @@ Chain.prototype.specialize = function(type, link, hasContent) {
             sequence.val(navSeq);
         }
     }
+    else if(type == "visibility") {
+        var visVal = $("<input type='text' class='visVal' style='width:90%; margin:2px' placeholder='visibility' />");
+        visVal.keyup(function() { _this.serializeLink(link) });
+        
+        body.append(visVal);
+        if(hasContent) {
+            visVal.val(this.chain[linkIndex]["visibility-"]);
+        }
+    }
+    else if(type == "deepest") {
+        var deepVal = generateSelect(["true", "false"]);
+        $(deepVal).addClass("deepVal");
+        $(deepVal).change(function() { _this.serializeLink(link) });
+        
+        body.append(deepVal);
+        deepVal.css("margin", "2px");
+        if(hasContent) {
+            var actualVal = this.chain[linkIndex]["deepest-"];
+            if(actualVal == true) {
+                deepVal.val("true");
+            }
+            else {
+                deepVal.val("false");
+            }
+        }
+    }
     else if(relatives.has(type)) {
-        if(hasContent) 
-        {
+        if(hasContent) {
             var name = Object.keys(this.chain[linkIndex])[0];
             var val = this.chain[linkIndex][name];
             //alert(JSON.stringify(val));
@@ -1070,6 +1125,22 @@ Chain.prototype.serializeLink = function(link) {
         var postfix = "=" + tag;
         this.chain[index][prefix] = postfix;
     }
+    else if(type == "visibility") {
+        var visVal = link.find(".visVal").val();
+        console.log(visVal);
+        
+        var prefix = "visiblity-";
+        var postfix = "=" + visVal;
+        this.chain[index][prefix] = postfix;
+    }
+    else if(type == "deepest") {
+        var deepVal = link.find(".deepVal").val();
+        console.log(deepVal);
+        
+        var prefix = "deepest-";
+        var postfix = "=" + deepVal;
+        this.chain[index][prefix] = postfix;
+    }
     else if(type == "parent") {
         
     }
@@ -1115,8 +1186,7 @@ function generateSelect(options) {
 /* Generate a random string of LENGTH characters
 * useful for matching participants across linked experiments
 */
-function randomString(length)
-{
+function randomString(length) {
 	var str = "";
 	for(var i = 0; i < length; i++) {
 		var charCode = 0;

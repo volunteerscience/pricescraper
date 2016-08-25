@@ -5,4 +5,3 @@ if(typeof document.vs_marker == "undefined") {
 else {
     false;
 }
-

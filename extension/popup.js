@@ -27,21 +27,39 @@ var disableButton = $('<button type="button" class="btn btn-danger">Disable this
 var enableButton = $('<button type="button" class="btn btn-success">Enable this site.</button>');
 
 function setTitle() {
+    var siteFound = false;
     for(var i = 0; i < supportedSites.length; i++) {
         if(currTab.url.indexOf(supportedSites[i].site) == 0) {
-            document.getElementById("title").innerHTML = supportedSites[i].name + ": supported site!";
+            siteFound = true;
+            (function() {
+                document.getElementById("title").innerHTML = supportedSites[i].name + ": supported site!";
             
-            let siteName = supportedSites[i].name;
-            chrome.storage.local.get(supportedSites[i].name, function(obj) {
-                if(typeof obj[siteName] == "undefined" || (typeof obj[siteName] != "undefined" && obj[siteName] == "enabled")) {
-                    createDisableButton(siteName);
-                } 
-                else if(obj[siteName] == "disabled") {
-                    createEnableButton(siteName);
-                }
-            });
+                var siteName = supportedSites[i].name;
+                chrome.storage.local.get(supportedSites[i].name, function(obj) {
+                    if(typeof obj[siteName] == "undefined" || (typeof obj[siteName] != "undefined" && obj[siteName] == "enabled")) {
+                        createDisableButton(siteName);
+                    } 
+                    else if(obj[siteName] == "disabled") {
+                        createEnableButton(siteName);
+                    }
+                }); 
+            })();
+            break;
         }
     }
+    
+    // unsupported site
+    if(!siteFound) {
+        var sandboxButton = $('<button type="button" class="btn btn-success">Start Sandbox</button>');
+        $("#toggleDisable").html(sandboxButton);
+        sandboxButton.click(function() {
+            startSandbox(); 
+        });
+    }
+}
+
+function startSandbox() {
+    chrome.runtime.sendMessage({"trigger_sandbox": true}, function(response) {});
 }
 
 function createEnableButton(name) {

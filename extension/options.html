@@ -1,0 +1,57 @@
+<html>
+
+<head>
+    <script src="scripts/options.js"></script>
+    <script src="scripts/jquery.js"></script>
+    <script src="scripts/bootstrap.js"></script>
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="css/options.css">
+    <title>VS Options</title>
+</head>
+
+<body>
+    <nav class="navbar navbar-inverse bg-faded">
+        
+        <div class="navbar-header">
+            <a class="navbar-brand" target="_blank" href="https://volunteerscience.com/">Volunteer Science</a>
+        </div>
+
+        <ul class="nav navbar-nav">
+            <li class="nav-item active">
+                <a class="nav-link" href="#">Manage<span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Learn</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Survey</a>
+            </li>
+        </ul>
+    </nav>
+    
+    <div class="container-fluid" style="margin:20px">
+        <div class="row">
+            <div class="page-header">
+                <h1>
+                    Data Donation
+                    <div id="donateStats">
+                        <small>You have visited <span id="historyNum"></span> websites and collected <span id="cookieNum"></span> cookies.</small>
+                    </div>
+                </h1>
+            </div>
+            <div class="col-sm-3">
+                <p>
+                    <label for="history">Donate your history?</label>
+                    <input type="checkbox" id="historyCheckbox" name="history" />
+                </p>
+                <p>
+                    <label for="cookies">Donate your cookies?</label>
+                    <input type="checkbox" id="cookieCheckbox" name="cookies" />
+                </p>
+            </div>
+        </div> 
+        <button type="button" class="btn btn-success" id="donateButton">Donate</button>
+    </div>
+</body>
+
+</html>

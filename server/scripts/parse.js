@@ -4,16 +4,17 @@ var collective = {};
 var labels = {"mandatory-labels":[], "data-labels": []};
 
 function processJSON(jsonArr) {
+    var resolveRes = [];
     for(var i = 0; i < jsonArr.length; i++) {
         //console.log("evaulating " + JSON.stringify(jsonArr[i]));
-        resolve(jsonArr[i]);
+        resolveRes.push(resolve(jsonArr[i]));
     }
     
     var refinedCollective = {};
+    //console.log(collective);
     
     for(var item in collective) {
         var curr = collective[item];    
-        //console.log(Object.keys(collective[item]));
         // Does this item have all the necessary keys
         var hasAllKeys = true;
         for(var m = 0; m < labels["mandatory-labels"].length; m++) {
@@ -25,42 +26,97 @@ function processJSON(jsonArr) {
             }
         }
         if(hasAllKeys) {
+            for(var i = 0; i < curr["vs_price"]["element"].length; i++) {
+                $(curr["vs_price"]["element"][i]).attr("vs_price_index", i);
+            }
+
+            for(var key in curr) {
+                if(key.indexOf("vs_price::") == 0 && "vs_price" in curr) {
+                    var subkey = key.substr(10);
+                    var priceElements = curr["vs_price"]["element"];
+                    var ctxtElements = curr[key]["element"];
+
+                    var ctxtArr = {};
+                    for(var i = 0; i < ctxtElements.length; i++) {
+                        var lowestDistance = Infinity;
+                        var closestPriceIndex = null;
+                        for(var j = 0; j < priceElements.length; j++) {
+                            var dist = distance(ctxtElements[i], priceElements[j])[0];
+                            if(dist < lowestDistance) {
+                                lowestDistance = dist;
+                                closestPriceIndex = j;
+                            }
+                        }
+                        ctxtArr[closestPriceIndex] = curr[key]["text"][i];
+                    }
+                    if(typeof curr["vs_price"]["ctxt"] == "undefined") {
+                        curr["vs_price"]["ctxt"] = {};
+                    }
+                    curr["vs_price"]["ctxt"][subkey] = ctxtArr;
+                }
+            }
             refinedCollective[item] = collective[item];
         }
     }
     
     var keys = Object.keys(refinedCollective);
     for(var i = 0; i < keys.length; i++) {
-        collectiveArr.push(refinedCollective[keys[i]]);
+        var copy = {};
+        var orig = refinedCollective[keys[i]];
+        
+        for(var key in orig) {
+            if(key != "index") {
+                copy[key] = {};
+                for(var type in orig[key]) {
+                    if(type != "element") {
+                        copy[key][type] = orig[key][type];
+                    }
+                }
+            }
+            else {
+                copy[key] = orig[key];
+            }
+        }
+        
+        collectiveArr.push(copy);
         collectiveArr[i]["vsid"] = keys[i];
     }
     
     collectiveArr = collectiveArr.sort(function(a, b) {
         return a.index - b.index;
     });
+    
+    return resolveRes;
 }
 
 function EvalSetOp(obj, params) {
     //console.log("evaluating a set op");
+    //console.log(JSON.stringify(obj));
     var op = Object.keys(obj)[0];
     var val = obj[op];
     
     var set1 = val[0];
     var set2 = val[1];
     
-    alert(JSON.stringify(set1));
-    alert(JSON.stringify(set2));
+    //alert(JSON.stringify(set1));
+    //alert(JSON.stringify(set2));
     
     val[0] = resolve(set1, params);
     val[1] = resolve(set2, params);
     set1 = val[0];
     set2 = val[1];
     
+    //console.log("from setop");
+    //console.log(set1);
+    //console.log(set2);
     if(op == "union") {
         return _.union(set1, set2);
     }
     else if(op == "inter") {
         return _.intersection(set1, set2);
+    }
+    else if(op == "sinter") {
+        return smartInter(set1, set2);
     }
     else if(op == "diff") {
         return _.difference(set1, set2);
@@ -69,17 +125,21 @@ function EvalSetOp(obj, params) {
 
 function EvalUniOp(obj, params) {
     //console.log("evaluating a uni op");
+    //console.log(JSON.stringify(obj));
     var op = Object.keys(obj)[0];
     var val = obj[op];
     
     obj[op] = resolve(val, params);
     obj[op] = findSuperStructure(obj[op], false);
     
+    //console.log("from uniop");
+    //console.log(obj);
     return obj[op];
 }
 
 function EvalChain(obj, params) {
     //console.log("evaluating a chain");
+    //console.log(JSON.stringify(obj));
     var chain = obj.chain;
     for(var i = 0; i < chain.length; i++) {
         var key = Object.keys(chain[i])[0];
@@ -89,13 +149,15 @@ function EvalChain(obj, params) {
         }
     }
     
-    elements = [];
+    var elements = [];
     if("cascade" in params && params["cascade"] == true) {
-        var context = resolve(params["ctxt"]);
+        //console.log("HELLO HELLO CASCADE CASCADE");
+        var context = resolveSafe(params["ctxt"]);
         for(var i = 0; i < context.length; i++) {
             var subElements = findElement(chain, [context[i]], params["deep"]);
             for(var x = 0; x < subElements.length; x++) {
-                if($(context[i]).attr("vsid") != "undefined") {
+                if(typeof $(context[i]).attr("vsid") != "undefined") {
+                    //console.log("adding vsid: " + $(context[i]).attr("vsid"));
                     $(subElements[x]).attr("vsid", $(context[i]).attr("vsid"));
                     $(subElements[x]).addClass("vsid");
                 }
@@ -104,19 +166,34 @@ function EvalChain(obj, params) {
         }
     }
     else {
-        elements = findElement(chain, resolve(params["ctxt"]), params["deep"]);
+        //console.log("I WONDER WHY WE ARE IN HERE");
+        if("ctxt" in params && "deep" in params) {
+            elements = findElement(chain, resolve(params["ctxt"]), params["deep"]);
+        }
+        else if("ctxt" in params) {
+            elements = findElement(chain, resolve(params["ctxt"]));
+        }
+        else {
+            elements = findElement(chain);
+        }
+        //elements = findElement(chain, resolve(params["ctxt"]), params["deep"]);
     }
     
+    //console.log("from chain:");
+    //console.log(elements);
     return elements;
 }
 
 function EvalDesc(obj) {
     //console.log("evaluating a desc");
+    //console.log(JSON.stringify(obj));
     var desc = obj.desc[0];
     var params = obj.desc[1];
     
     var val = null;
     if(Object.keys(params).length > 0) {
+        //console.log("HEYOOOOO");
+        //console.log(JSON.stringify(params));
         val = resolve(desc, params);
         
         if("name" in params) {
@@ -129,6 +206,7 @@ function EvalDesc(obj) {
     
     if("vsid" in params && params["vsid"] == "generate") {
         if(("cascade" in params && params["cascade" == false]) || !("cascade" in params)) {
+            //console.log("adding vsid");
             for(var i = 0; i < val.length; i++) {
                 var id = randomString(20);
                 $(val[i]).attr("vsid", id);
@@ -142,7 +220,10 @@ function EvalDesc(obj) {
         }
     }
     
-    if("grab" in params && "name" in params && "vsid" in params) {
+    // Note, really, no human should try to write a parser that has a grab/name separate from a vsid, but
+    // we're gonna let it slide since it really helps our poor computer
+    if("grab" in params && "name" in params/* && "vsid" in params*/) {
+        console.log("grabbing " + params["name"]);
         var types = params["grab"].split(",");
         
         var obj = {};
@@ -164,10 +245,18 @@ function EvalDesc(obj) {
             
             if(!(vsid in collective)) {
                 collective[vsid] = {"index":currInd++};
+                //console.log("Marking VSID " + vsid + " at index " + currInd + " with name " + params.name);
             }
             
             if(typeof collective[vsid][params["name"]] == "undefined") {
                 collective[vsid][params["name"]] = {};
+            }
+            
+            if(typeof collective[vsid][params["name"]]["element"] == "undefined") {
+                collective[vsid][params["name"]]["element"] = [val[i]];
+            }
+            else {
+                collective[vsid][params["name"]]["element"].push(val[i]);
             }
             
             for(var x = 0; x < types.length; x++) {
@@ -185,18 +274,10 @@ function EvalDesc(obj) {
                 } 
             }
         }
-        
-        /*var keys = Object.keys(collective);
-        collectiveArr = new Array(keys.length);
-        
-        for(var i = 0; i < keys.length; i++) {
-            var index = collective[keys[i]]["index"];
-            collectiveArr[index] = {};
-            collectiveArr[index] = collective[keys[i]];
-            collectiveArr[index]["vsid"] = keys[i];
-        }*/
     }
     
+    //console.log("from desc:");
+    //console.log(val);
     return val;
 }
 
@@ -206,8 +287,18 @@ function EvalRef(obj) {
     return sets[refName];
 }
 
+function resolveSafe(obj, params) {
+    if(typeof params == "object") {
+        return resolve(JSON.parse(JSON.stringify(obj)), JSON.parse(JSON.stringify(params)));
+    }
+    else {
+        return resolve(JSON.parse(JSON.stringify(obj)));
+    }
+}
+
 function resolve(obj, params) {
-    //console.log("Resolving");
+    //console.log("Resolving " + JSON.stringify(obj));
+    //console.log(obj);
     if(typeof obj == "undefined") {
         console.log("Type of obj is undefined");
         return obj;
@@ -219,6 +310,9 @@ function resolve(obj, params) {
     var res = null;
     
     //console.log("RESOLVING: " + type);
+    if(typeof(params) == "undefined") {
+        params = {};
+    }
     
     if(type == "chain") {
         res = EvalChain(obj, params);
@@ -232,10 +326,10 @@ function resolve(obj, params) {
     else if(type == "super") {
         res = EvalUniOp(obj, params);
     }
-    else if(type == "union" || type == "inter" || type == "diff") {
+    else if(type == "union" || type == "inter" || type == "sinter" || type == "diff") {
         res = EvalSetOp(obj, params);
     }
-    //console.log(res);
+    
     return res;
 }
 

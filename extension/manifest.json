@@ -3,7 +3,11 @@
 
     "name": "Price Comparison",
     "description": "Expose how websites personalize prices to you.",
-    "version": "0.0.1",
+    "version": "0.0.7",
+    "minimum_chrome_version": "10.0",
+    "options_page": "options.html",
+    "devtools_page": "devtools.html",
+    "debug": false,
 
     "background": {
         "scripts": ["background.js"]
@@ -27,16 +31,20 @@
     "permissions": [
         "activeTab",
         "tabs",
+        "cookies",
         "webRequest",
         "storage",
+        "history",
         "http://*/",
         "https://*/"
     ],
     
     "web_accessible_resources": [
         "scripts/*.js",
+        "smart/*.js",
         "sites/*.js",
         "css/*.css",
+        "fonts/*.*",
         "images/*.png"
     ]
 }

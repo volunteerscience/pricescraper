@@ -2,6 +2,9 @@ var http = require('http');
 var express = require('express');
 var bodyParser = require("body-parser");
 var Horseman = require('node-horseman');
+//var mongodb = require('mongodb');
+//
+//var MongoClient = mongodb.MongoClient;
 
 var app = express();
 
@@ -35,8 +38,23 @@ app.listen(PORT, function() {
     console.log("Server listening on: http://localhost:%s", PORT);
 });
 
-/*var supportedSites = [{"site": "https://www.google.com/flights/", "script":"google-flights"},
-                      {"site": "https://www.amazon.com/s/", "script":"amazon"}];*/
+//var mongoURL = 'mongodb://localhost:27017/db';
+//// Use connect method to connect to the Server
+//MongoClient.connect(mongoURL, function (err, db) {
+//    if(err) {
+//        console.log('Unable to connect to the mongoDB server. Error:', err);
+//    }
+//    else {
+//        //Hooray!! We are connected. :)
+//        console.log('Connection established to', mongoURL);
+//
+//        // do some work here with the database.
+//        
+//
+//        //Close connection
+//        db.close();
+//    }
+//});
 
 var supportedSites = [{"site": "https://www.google.com/flights/", "script":"google-flights", "name": "Google Flights"},
                       {"site": "https://www.amazon.com/s/", "script":"amazon", "name": "Amazon"},
@@ -59,6 +77,10 @@ function scrape(result, url) {
     var page = new Horseman({'timeout':30000});
     
     page
+        .on("timeout", function(msg) {
+            console.log("timeout");
+            result.send(JSON.stringify({"status": "fail"}));   
+        })
         .open(url)
         .injectJs("scripts/underscore.js")
         .injectJs("scripts/sel.js")
@@ -67,25 +89,26 @@ function scrape(result, url) {
         .injectJs("scripts/process_data.js")
         .injectJs("sites/" + scraperScript + ".js")
         .evaluate(function(done) {
-            vs_init();
-            var checkInt = setInterval(function() {
-                if(getVSData() != null) {
-                    clearInterval(checkInt);
-                    done(null, getVSData());
-                }
-            }, 500);
-        
-            //var nifty = findElement([{"contents-1000":"[+lt]show"}, {"contents-1000":"[+lt]longer"}, {"contents-1000":"[+lt]expensive"}]);
-            //done(null, nifty.length);
+            try {
+                vs_init();
+                var checkInt = setInterval(function() {
+                    if(getVSData() != null) {
+                        clearInterval(checkInt);
+                        done(null, getVSData());
+                    }
+                }, 500);
+            }
+            catch(err) {
+                // do nothing, just wait
+                // strike that, switch to a better library
+            }
         })
         .then(function(msg) {
             //console.log("LENGTH: " + msg);
             console.log("parsing complete");
-            result.send(JSON.stringify(msg));
+            result.send(JSON.stringify({"status": "success", "msg": msg}));
             page
-                .screenshot("test6.png")
+                .screenshot("test7.png")
                 .close();
         });
 }
-
-//scrape(null, "https://www.google.com/flights/#search;f=BOS;t=JFK,EWR,LGA;d=2016-07-24;r=2016-07-28;")
