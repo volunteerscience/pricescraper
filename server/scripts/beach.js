@@ -3,50 +3,22 @@ var uniqueID = (function() {
    return function() { return id++; };  // Return and increment
 })(); // Invoke the outer function after defining it.
 
-function findSuperStructure(elems, tag) {
+function findSuperStructure(elems) {
     var superStructure = [];
-    if(typeof tag == "undefined")
-        tag = false;
     
     for(var i = 0; i < elems.length; i++) {
-        var currElem = $(elems[i]);
-        var prevElem = null;
-        while(currElem.length > 0) {
-            var subElems = [];
-            for(var j = 0; j < elems.length; j++) {
-                if(j != i) {
-                    subElems.push(elems[j]);
-                }
-            }
-            
-            if(eachContains(currElem, subElems)) {
-                superStructure.push(prevElem[0]);
-                
-                if(tag) {
-                    var uid = uniqueID();
-                    $(elems[i]).attr("price-id", uid);
-                    $(elems[i]).addClass("vs_price");
-                    $(prevElem[0]).attr("price-id", uid);
-                    $(prevElem[0]).addClass("vs_container");
-                }
-                
-                break;
-            }
-            prevElem = currElem;
-            currElem = $(currElem).parent();
+        var currParent = $(elems[i]).parent()[0];
+        var prevParent = elems[i];
+        while($(currParent).find($(elems)).length == 1) {
+            prevParent = currParent;
+            currParent = $(currParent).parent()[0];
         }
+        
+        superStructure.push(prevParent);
     }
     
+    //console.log(superStructure);
     return superStructure;
-}
-
-function eachContains(elem, arr) {
-    for(var i = 0; i < arr.length; arr++) {
-        if($.contains($(elem)[0], $(arr[i])[0])) {
-            return true;
-        }
-    }
-    return false;
 }
 
 function waitFor(desc, int, cb) {

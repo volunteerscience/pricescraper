@@ -6,113 +6,27 @@
         <script src="scripts/beach.js"></script>
         <script src="scripts/render.js"></script>
         <script src="scripts/parse.js"></script>
+        <script src="scripts/lcss.js"></script>
         
         <link rel="stylesheet" href="css/beach.css">
         <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         
-        <style>
-            .container {
-                display:inline-flex;
-                border-style: solid;
-                border-width: 1px;
-                /*flex-grow: 1;
-                max-width:100%;
-                overflow-x: scroll;*/
-                margin: 5px;
-            }
-            .type {
-                font-family: 'Roboto Mono', monospace;
-                font-size:14px;
-                width: 14px;
-                word-wrap:break-word;
-                text-align: center;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            }
-            .arrow {
-                cursor: pointer;
-            }
-            .menu {
-                display:flex;
-                flex-direction: column;
-                justify-content: center;
-            }
-            .union {
-                display:flex;
-                background-color: greenyellow;
-            }
-            .diff {
-                display: flex;
-                background-color: crimson;
-                color: white;
-            }
-            .inter {
-                display: flex;
-                background-color: coral;
-            }
-            .desc {
-                display: flex;
-                background-color: navy;
-                color: white;
-            }
-            .chain {
-                display: flex;
-                background-color: darkturquoise;
-            }
-            .ref {
-                display: flex;
-                background-color:firebrick;
-                color: white;
-            }
-            .super {
-                display: flex;
-                background-color: aquamarine;
-            }
-            .slate {
-                display: flex;
-                background-color:beige;
-            }
-            .array {
-                display:flex;
-                background-color: azure;
-            }
-            .content {
-                display: flex;
-                /*flex-direction: row;*/
-                align-items: flex-start;
-            }
-            .flex-horizontal {
-                flex-direction: row;
-            }
-            .flex-vertical {
-                flex-direction: column;
-            }
-            .master {
-                display: inline-flex;
-                flex-direction: column;
-                border-style: solid;
-                border-width: 3px;
-                border-color: blue;
-                justify-content: flex-start;
-            }
-            
-        </style>
-        
         <script>
             function crude() {
-                $("#master").empty();
+                $("#holder").empty();
                 jsonArr = JSON.parse($("#nifty").val());
-                drawJSON(jsonArr, $("#master"));
+                drawJSON(jsonArr, $("#holder"));
             }
         </script>
         
     </head>
     
     <body>
-        <div id="master" class="master"></div>
+        <div id="suffix"></div>
+        
+        <div id="holder" class="holder"></div>
         <!--<div class="container">
             <div class="inter">
                 <div class="menu">
@@ -131,8 +45,9 @@
         </div>
         
         <script>
-            jsonArr = [{}];//[{"union":[{"chain":[{"id-":"=cool"}]},{"chain":[{"id-":"=cool"}]}]}];
-            drawJSON(jsonArr, $("#master"));
+            jsonArr = [{"desc":[{"super":{"chain":[{"class-":"[+l]vip"},{"prop-title":"[+l]click this link to access"},{"prop-title":"[+l]sneaker"},{"contents-240":"[+l]sneaker"},{"visibility-":"visible"},{"deepest-":true}]}},{"name":"vs_container","vsid":"generate"}]},{"desc":[{"chain":[{"class-":"[+l]vip"},{"prop-title":"[+l]click this link to access"},{"prop-title":"[+l]sneaker"},{"contents-240":"[+l]sneaker"},{"visibility-":"visible"},{"deepest-":true}]},{"name":"vs_name","vsid":"generate","tag":true,"ctxt":{"ref":"vs_container"},"deep":true,"grab":"text","mandatory":true,"cascade":true}]},{"desc":[{"chain":[{"class-":"[+l]bold"},{"tag-":"=SPAN"},{"contents-48":"[+l]$"},{"visibility-":"visible"},{"deepest-":true}]},{"name":"vs_price","vsid":"generate","tag":true,"ctxt":{"ref":"vs_container"},"deep":true,"grab":"text","mandatory":true,"cascade":true}]},{"desc":[{"chain":[{"prop-src":"[+l]http://thumbs.ebaystatic.com/images/"},{"prop-src":"[+l]/s-l225.jpg"},{"class-":"[+l]img"},{"prop-alt":"[+l]sneaker"},{"tag-":"=IMG"},{"visibility-":"visible"},{"deepest-":true}]},{"name":"vs_image","vsid":"generate","tag":true,"ctxt":{"ref":"vs_container"},"deep":true,"grab":"src","mandatory":true,"cascade":true}]},{"desc":[{"chain":[{"class-":"[+l]iconetrs2badge"},{"prop-src":"[+l]http://ir.ebaystatic.com/pictures/aw/pics/s_1x2.gif"},{"prop-alt":"[+l]get fast shipping and excellent service when you buy from ebay top-rated sellers"},{"tag-":"=IMG"},{"visibility-":"visible"},{"deepest-":true}]},{"name":"vs_trusted","vsid":"generate","tag":true,"ctxt":{"ref":"vs_container"},"deep":true,"grab":"src","mandatory":false,"cascade":true}]}];
+            
+            drawJSON(jsonArr, $("#holder"));
         </script>
 
     </body>

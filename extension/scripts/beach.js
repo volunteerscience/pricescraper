@@ -3,7 +3,62 @@ var uniqueID = (function() {
    return function() { return id++; };  // Return and increment
 })(); // Invoke the outer function after defining it.
 
-function findSuperStructure(elems, tag) {
+function findSuperStructure(elems) {
+    var superStructure = [];
+    
+    for(var i = 0; i < elems.length; i++) {
+        var currParent = $(elems[i]).parent()[0];
+        var prevParent = elems[i];
+        while($(currParent).find($(elems)).length == 1) {
+            prevParent = currParent;
+            currParent = $(currParent).parent()[0];
+        }
+        
+        superStructure.push(prevParent);
+    }
+    
+    //console.log(superStructure);
+    return superStructure;
+}
+
+/*function findSuperStructure(elems) {
+    var superStructure = [];
+    for(var i = 0; i < elems.length; i++) {
+        var otherElems = [];
+        for(var j = 0; j < elems.length; j++) {
+            if(j != i) {
+                otherElems.push(elems[j]);
+            }
+        }
+        
+        var prevElem = elems[i];
+        var currElem = $(elems[i]).parent()[0];
+        var count = countMatches(currElem, otherElems);
+        while(count < 0.5 * otherElems.length) { // gotta tinker with these numbers
+            prevElem = currElem;
+            currElem = $(currElem).parent()[0];
+            count = countMatches(currElem, otherElems);
+        }
+        if(superStructure.indexOf(prevElem) < 0) {
+            superStructure.push(prevElem);
+        }
+    }
+    
+    return superStructure;
+}
+
+function countMatches(container, children) {
+    var matchNum = 0;
+    for(var i = 0; i < children.length; i++) {
+        if($.contains(container, children[i])) {
+            matchNum++;
+        }
+    }
+    
+    return matchNum;
+}*/
+
+/*function findSuperStructure(elems, tag) {
     var superStructure = [];
     if(typeof tag == "undefined")
         tag = false;
@@ -20,6 +75,10 @@ function findSuperStructure(elems, tag) {
             }
             
             if(eachContains(currElem, subElems)) {
+                console.log(currElem);
+                console.log(subElems);
+                console.log("\n");
+                
                 superStructure.push(prevElem[0]);
                 
                 if(tag) {
@@ -40,14 +99,17 @@ function findSuperStructure(elems, tag) {
     return superStructure;
 }
 
-function eachContains(elem, arr) {
+function eachContains(elem, arr) {    
+    var numFound = 0;
     for(var i = 0; i < arr.length; arr++) {
         if($.contains($(elem)[0], $(arr[i])[0])) {
-            return true;
+            console.log(arr[i]);
+            numFound++;
         }
     }
-    return false;
-}
+    console.log(numFound);
+    return numFound > 0;
+}*/
 
 function waitFor(desc, int, cb) {
     var interval = setInterval(function() {

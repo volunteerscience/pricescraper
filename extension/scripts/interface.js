@@ -1,3 +1,4 @@
+var execParse = false;
 function vs_init_ui() {
     //alert("INJECTION");
     
@@ -6,12 +7,15 @@ function vs_init_ui() {
     vs_dialog.find("#sureButtonHolder").append(sureButton);
     
     sureButton.click(function() {
+        execParse = true;
         loadScrapeUI();
     });
     
     vs_dialog.on("hidden.bs.modal", function () {
-        centerOverlayBody();
-        vs_continue(); 
+        if(execParse) {
+            centerOverlayBody();
+            vs_continue(); 
+        }
     });
     
     vs_dialog.prependTo('body');
@@ -20,7 +24,7 @@ function vs_init_ui() {
 
 function loadScrapeUI() {
     var spinnerSrc = chrome.extension.getURL("images/icon128.png");
-    var vs_overlay = $('<div id="vs_overlay"> <div id="vs_overlay_screen"></div> <div id="vs_overlay_body"> <div id="vs_spinner"><img src=' + spinnerSrc + ' /></div> </div> </div>');
+    var vs_overlay = $('<div id="vs_overlay"> <div id="vs_overlay_screen"></div> <div id="vs_overlay_body"> <div id="vs_spinner"><img src=' + spinnerSrc + ' /></div><span id="scrape_status">scraping</span></div></div>');
     
     vs_overlay.prependTo('body');
     $("body").addClass("vs_overlay");
@@ -38,4 +42,26 @@ function centerOverlayBody() {
     overlayBodyHeight = $("#vs_overlay_body").height();
 
     $("#vs_overlay_body").offset({"left": centerX - (overlayBodyWidth / 2), "top": centerY - (overlayBodyHeight / 2)});
+}
+
+function disableInterface() {
+    $("#vs_overlay").fadeOut(500);
+    $("#vs_overlay").remove();
+    $("body").removeClass("vs_overlay");
+}
+
+function surveyPopup() {
+    var survey_dialog = $('<div class="modal fade" id="vs_modal" role="dialog"> <div class="modal-dialog"> <!-- Modal content--> <div class="modal-content"> <div class="modal-header"> <button type="button" class="close" data-dismiss="modal">&times;</button> <h4 class="modal-title">Tell us more about you!</h4> </div> <div class="modal-body"> <p>Our researchers want to understand how price discrimination affects different groups.  By taking this survey, you are helping real data scientists decipher the tactics companies use to target customers.</p> </div> <div class="modal-footer"> <span id="sureButtonHolder"></span> <button type="button" class="btn btn-default survey_close" data-dismiss="modal">Close</button> </div> </div> </div> </div>');
+    var sureButton = $('<button id="sureButton" type="button" class="btn btn-success">Sure</button>');
+    survey_dialog.find("#sureButtonHolder").append(sureButton);
+    
+    sureButton.click(function() {
+        survey_dialog.find(".modal-dialog").css("width", "80%");
+        survey_dialog.find(".modal-body").html("<iframe src='https://volunteerscience.com/amt/test/ea8ba18bbe50aeabb127/' style='width:100%; height:500px;'></iframe>");
+        survey_dialog.find(".survey_close").text("Done");
+        sureButton.remove();
+    });
+    
+    survey_dialog.prependTo('body');
+    survey_dialog.modal("show");
 }

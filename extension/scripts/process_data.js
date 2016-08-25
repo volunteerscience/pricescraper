@@ -10,6 +10,6 @@ function vs_scraper_done(labels, params_blacklist) {
     }
 
     chrome.runtime.sendMessage({"vs_prices": ours, "labels": labels, "url":url }, function(response) {
-        //alert("got a response");
+        $("#scrape_status").text("waiting for server");
     });
 }
