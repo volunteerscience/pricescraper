@@ -1,4 +1,4 @@
-var vsScraperVersion = "001";
+var vsScraperVersion = 1;
 
 if(typeof window.vs_scraper == "undefined") {
     window.vs_scraper = true;
@@ -6,7 +6,6 @@ if(typeof window.vs_scraper == "undefined") {
 }
 
 function vs_init() {
-    //console.log("init called");
     vs_init_ui();
 }
 

@@ -1,3 +1,5 @@
+var vsScraperVersion = "001";
+
 if(typeof window.vs_scraper == "undefined") {
     window.vs_scraper = true;
     vs_init();

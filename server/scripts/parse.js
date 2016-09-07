@@ -10,54 +10,11 @@ function processJSON(jsonArr) {
         resolveRes.push(resolve(jsonArr[i]));
     }
     
-    var refinedCollective = {};
-    //console.log(collective);
-    
-    for(var item in collective) {
-        var curr = collective[item];    
-        // Does this item have all the necessary keys
-        var hasAllKeys = true;
-        for(var m = 0; m < labels["mandatory-labels"].length; m++) {
-            var currKey = Object.keys(labels["mandatory-labels"][m])[0];
-            if(!(currKey in collective[item])) {
-                //console.log("lacking label " + currKey);
-                hasAllKeys = false;
-                break;
-            }
-        }
-        if(hasAllKeys) {
-            for(var i = 0; i < curr["vs_price"]["element"].length; i++) {
-                $(curr["vs_price"]["element"][i]).attr("vs_price_index", i);
-            }
-
-            for(var key in curr) {
-                if(key.indexOf("vs_price::") == 0 && "vs_price" in curr) {
-                    var subkey = key.substr(10);
-                    var priceElements = curr["vs_price"]["element"];
-                    var ctxtElements = curr[key]["element"];
-
-                    var ctxtArr = {};
-                    for(var i = 0; i < ctxtElements.length; i++) {
-                        var lowestDistance = Infinity;
-                        var closestPriceIndex = null;
-                        for(var j = 0; j < priceElements.length; j++) {
-                            var dist = distance(ctxtElements[i], priceElements[j])[0];
-                            if(dist < lowestDistance) {
-                                lowestDistance = dist;
-                                closestPriceIndex = j;
-                            }
-                        }
-                        ctxtArr[closestPriceIndex] = curr[key]["text"][i];
-                    }
-                    if(typeof curr["vs_price"]["ctxt"] == "undefined") {
-                        curr["vs_price"]["ctxt"] = {};
-                    }
-                    curr["vs_price"]["ctxt"][subkey] = ctxtArr;
-                }
-            }
-            refinedCollective[item] = collective[item];
-        }
-    }
+    //console.log("COLLECTIVE IS: ");
+    //console.log(JSON.stringify(collective));
+    //console.log(JSON.stringify(Object.keys(collective)));
+    //return;
+    var refinedCollective = refineCollective();
     
     var keys = Object.keys(refinedCollective);
     for(var i = 0; i < keys.length; i++) {
@@ -81,10 +38,13 @@ function processJSON(jsonArr) {
         collectiveArr.push(copy);
         collectiveArr[i]["vsid"] = keys[i];
     }
+    //console.log("survived post loop");
     
     collectiveArr = collectiveArr.sort(function(a, b) {
         return a.index - b.index;
     });
+    
+    //console.log(collectiveArr);
     
     return resolveRes;
 }
@@ -153,7 +113,10 @@ function EvalChain(obj, params) {
     if("cascade" in params && params["cascade"] == true) {
         //console.log("HELLO HELLO CASCADE CASCADE");
         var context = resolveSafe(params["ctxt"]);
+        //console.log("context is: ");
+        //console.log(context);
         for(var i = 0; i < context.length; i++) {
+            //console.log(context[i]);
             var subElements = findElement(chain, [context[i]], params["deep"]);
             for(var x = 0; x < subElements.length; x++) {
                 if(typeof $(context[i]).attr("vsid") != "undefined") {
@@ -167,11 +130,17 @@ function EvalChain(obj, params) {
     }
     else {
         //console.log("I WONDER WHY WE ARE IN HERE");
+        if("ctxt" in params && "split" in params) {
+            var ctxt = resolveSafe(params["ctxt"]);
+            for(var i = 0; i < ctxt.length; i++) {
+                
+            }
+        }
         if("ctxt" in params && "deep" in params) {
-            elements = findElement(chain, resolve(params["ctxt"]), params["deep"]);
+            elements = findElement(chain, resolveSafe(params["ctxt"]), params["deep"]);
         }
         else if("ctxt" in params) {
-            elements = findElement(chain, resolve(params["ctxt"]));
+            elements = findElement(chain, resolveSafe(params["ctxt"]));
         }
         else {
             elements = findElement(chain);
@@ -205,7 +174,7 @@ function EvalDesc(obj) {
     }
     
     if("vsid" in params && params["vsid"] == "generate") {
-        if(("cascade" in params && params["cascade" == false]) || !("cascade" in params)) {
+        if(("cascade" in params && params["cascade"] == false) || !("cascade" in params)) {
             //console.log("adding vsid");
             for(var i = 0; i < val.length; i++) {
                 var id = randomString(20);
@@ -223,7 +192,7 @@ function EvalDesc(obj) {
     // Note, really, no human should try to write a parser that has a grab/name separate from a vsid, but
     // we're gonna let it slide since it really helps our poor computer
     if("grab" in params && "name" in params/* && "vsid" in params*/) {
-        console.log("grabbing " + params["name"]);
+        //console.log("grabbing " + params["name"]);
         var types = params["grab"].split(",");
         
         var obj = {};
@@ -267,6 +236,18 @@ function EvalDesc(obj) {
                 if(types[x] == "text") {
                     collective[vsid][params["name"]][types[x]].push($(val[i]).text());  
                 }
+                else if(types[x] in pluginTypes) {
+                    //console.log(types[x] + " is a plugin type.");
+                    var typeVal = pluginTypes[types[x]](val[i]);
+                    //if(typeof typeVal != "undefined") 
+                    {
+                        //console.log("typeval is " + typeVal);
+                        collective[vsid][params["name"]][types[x]].push(typeVal);
+                    }
+                    /*else {
+                        console.log("type val was undefined, sadly");
+                    }*/
+                }
                 else {
                     if(typeof $(val[i]).attr(types[x]) != "undefined") {
                         collective[vsid][params["name"]][types[x]].push($(val[i]).attr(types[x]));
@@ -281,7 +262,7 @@ function EvalDesc(obj) {
     return val;
 }
 
-function EvalRef(obj) {
+function EvalRef(obj, params) {
     //console.log("evaluating a ref");
     var refName = obj.ref;
     return sets[refName];
@@ -321,7 +302,7 @@ function resolve(obj, params) {
         res = EvalDesc(obj, params);
     }
     else if(type == "ref") {
-        res = EvalRef(obj);
+        res = EvalRef(obj, params);
     }
     else if(type == "super") {
         res = EvalUniOp(obj, params);

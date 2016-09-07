@@ -19,17 +19,38 @@ function findElement(desc, matchArr, deep) {
         var dashInd = e.indexOf("-")
         var prefix = e.substr(0, dashInd);
         
-        if(prefix == "len") {            
-            len = elem[e];
+        if(prefix == "len") {      
+            var op = elem[e][0]; 
+            var len = elem[e].substr(1);
+            //alert(op);
             if(matches.length == 0) {
                 // searchForBase = true; // still only search for base words
                 matches = $("*").filter(function() {
-                    return $(this).text().length < len;
+                    if(op == "=") {
+                        return $(this).text().length < len;
+                    }
+                    else if(op == ">") {
+                        return $(this).text().length > len;
+                    }
+                    else if(op == "<") {
+                        return $(this).text().length < len;
+                    }
+                    return false;
                 });
             }
             else {
                 matches = $(matches).filter(function() {
-                    return $(this).text().length < len; 
+                    if(op == "=") {
+                        return $(this).text().length < len;
+                    }
+                    else if(op == ">") {
+                        //console.log("hmmmm >>");
+                        return $(this).text().length > len;
+                    }
+                    else if(op == "<") {
+                        return $(this).text().length < len;
+                    }
+                    return false;
                 });
             }
         }
@@ -287,10 +308,6 @@ function findElement(desc, matchArr, deep) {
             
         }
         else if(prefix == "nav") {
-            //console.log("NAV");
-            //console.log(matches);
-            //console.log("\n\n");
-            
             var seq = elem[e].split(",");
             
             for(var s = 0; s < seq.length; s++) {
@@ -342,59 +359,61 @@ function findElement(desc, matchArr, deep) {
                 }
             }
         }
-        else if(prefix == "left" || prefix == "right" || prefix == "above" || prefix == "below") {
-            // searchForBase = false;
-            var ref = elem[e];
-            var tempMatches = $(matches).not("html, head, script, style");
-            if(matches.length == 0) {
-                tempMatches = $("*");
-            }
-            
-            tempMatches = tempMatches.filter(function () { 
-                res = isDirection(prefix, this, ref);
-                return res;
-            });
-            
-            if(matches.length == 0) {
-                matches = tempMatches;
-            }
-            else {
-                matches = _.intersection(matches, tempMatches);
-            }
-        }
         else if(prefix == "distance") {
             // searchForBase = false;
             var refs = elem[e];
-            if(matches.length == 0) {
-                matches = $("*");
-            }
             var bounds = jQuery.parseJSON(e.substr(dashInd + 1));
             var minDist = bounds[0];
             var maxDist = bounds[1];
             var minAngle = bounds[2];
             var maxAngle = bounds[3];
+            var fromX = bounds[4];
+            var fromY = bounds[5];
+            var toX = bounds[6];
+            var toY = bounds[7];
             
-            var subMatches = [];
-            for(var i = 0; i < refs.length; i++) {
-                var ref = refs[i];
-                //console.log($(ref).text());
-                var matchRef = $(matches).filter(function() {
-                    var res = distance(ref, this);
-                    var dist = res[0];
-                    var angle = res[1];
-                    
-                    if(this.ref != ref) {
-                        if(dist >= minDist && dist <= maxDist &&
-                           angle >= minAngle && angle <= maxAngle) {
-                            return true;
+            var distInt = typeof bounds[8] == "number" ? bounds[8] : 1;
+            var angleInt = typeof bounds[9] == "number" ? bounds[9] : 1;
+            
+            var degToRad = Math.PI / 180;
+            
+            if(matches.length == 0) {
+                var scrollInterval = window.innerHeight;
+                var documentHeight = $(document).height();
+                window.scrollTo(0, 0);
+                while(window.scrollY + scrollInterval < documentHeight) {
+                    for(var i = 0; i < refs.length; i++) {
+                        var cr = refs[i].getBoundingClientRect();
+                        var refPos = resolvePos(cr, fromX, fromY);
+                        var refX = refPos[0];
+                        var refY = refPos[1];
+
+                        for(var dist = minDist; dist <= maxDist; dist += distInt) {
+                            for(var angle = minAngle; angle <= maxAngle; angle += angleInt) {
+                                var newX = Math.floor(refX + dist * Math.cos(angle * degToRad));
+                                var newY = Math.floor(refY + dist * Math.sin(angle * degToRad));
+                                var elem = document.elementFromPoint(newX, newY);
+
+                                if(elem != null && matches.indexOf(elem) < 0) {
+                                    var newPos = resolvePos(elem.getBoundingClientRect(), toX, toY);
+                                    var newDist = euclidDist(refX, refY, newPos[0], newPos[1]);
+                                    //console.log(newDist + "::" + minDist + "," + maxDist);
+                                    //console.log(refX + "," + refY + "::" + newPos[0] + ", " + newPos[1]);
+                                    if(newDist >= minDist && newDist <= maxDist) {
+                                        matches.push(elem);
+                                    }
+                                }
+                            }
                         }
                     }
-                    return false;
-                });
-                subMatches = _.union(subMatches, _.flatten(matchRef));        
+                    window.scrollTo(0, window.scrollY + scrollInterval);
+                }
+                window.scrollTo(0, 0);
             }
-            
-            return _.intersection(subMatches, matches);
+            else {
+                
+            }
+            //return _.intersection(subMatches, matches);
         }
         
         searchDeepest = false; // this should never be true after the first iteration
@@ -406,6 +425,26 @@ function findElement(desc, matchArr, deep) {
     }
     gMatch = matches;
     return matches;
+}
+
+function resolvePos(clientRect, posX, posY) {
+    var xCoord = null;
+    var yCoord = null;
+    
+    if(posX == "center") {
+        xCoord = (clientRect.left + clientRect.right) / 2;
+    }
+    else {
+        xCoord = clientRect[posX];
+    }
+    if(posY == "center") {
+        yCoord = (clientRect.top + clientRect.bottom) / 2;
+    }
+    else {
+        yCoord = clientRect[posY];
+    }
+    
+    return [xCoord, yCoord];
 }
 
 function normalize(fakeArr) {
@@ -437,7 +476,8 @@ function distance(elemA, elemB) {
     posElemA["bottom"] = posElemA.top + $(elemA).height();
     posElemA["right"] = posElemA.left + $(elemA).width();
     posElemA["x"] = (posElemA.left + posElemA.right) / 2;
-    posElemA["y"] = (posElemA.top + posElemA.bottom) / 2;
+    posElemA
+    ["y"] = (posElemA.top + posElemA.bottom) / 2;
     
     posElemB["bottom"] = posElemB.top + $(elemB).height();
     posElemB["right"] = posElemB.left + $(elemB).width();
@@ -448,9 +488,13 @@ function distance(elemA, elemB) {
     var distY = posElemA.y - posElemB.y;
     
     var dist = Math.sqrt(Math.pow(distX, 2) + Math.pow(distY, 2));
-    var angle = Math.atan(distY, distX) * (180 / Math.PI)
+    var angle = Math.atan(distY, distX) * (180 / Math.PI);
     
     return [dist, angle];
+}
+
+function euclidDist(x1, y1, x2, y2) {
+    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 }
 
 // is elemA DIR elemB
@@ -468,21 +512,26 @@ function isDirection(dir, elemA, elemB) {
     var below = false;
     
     var directions = {"left": false, "right": false, "above": false, "below": false};
+    var distances = {"left": 0, "right": 0, "above": 0, "below": 0};
     
     if(posElemA.right <= posElemB.left) {
         directions["left"] = true;
+        distances["left"] = Math.abs(posElemA.right - posElemB.left);
     }
     if(posElemA.left >= posElemB.right) {
         directions["right"] = true;
+        distances["right"] = Math.abs(posElemA.left - posElemB.right);
     }
     if(posElemA.bottom <= posElemB.top) {
         directions["above"] = true;
+        distances["above"] = Math.abs(posElemA.bottom - posElemB.top);
     }
     if(posElemA.top >= posElemB.bottom) {
         directions["below"] = true;
+        distances["below"] = Math.abs(posElemA.top - posElemB.bottom);
     }
     
-    return directions[dir];
+    return [directions[dir], distances[dir]];
 }
 
 $.fn.ignore = function(sel) {

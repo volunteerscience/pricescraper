@@ -247,7 +247,7 @@ function mergeMain(arr1, arr2) {
             }
         }
     }
-    console.log(matchList);
+    //console.log(matchList);
     
     var bestMatches = [];
     for(var m = 0; m < matchList.length; m++) {
@@ -267,7 +267,7 @@ function mergeMain(arr1, arr2) {
                 bestInd = matchList[m][n]; // index in jsonArr1
             }   
         }
-        console.log("BEST IND FOR " + m + " IS " + bestInd);
+        //console.log("BEST IND FOR " + m + " IS " + bestInd);
         bestMatches.push(bestInd);
     }
     

@@ -3,8 +3,8 @@
 
     "name": "Price Comparison",
     "description": "Expose how websites personalize prices to you.",
-    "version": "0.0.7",
-    "minimum_chrome_version": "10.0",
+    "version": "0.0.8",
+    "minimum_chrome_version": "23.0",
     "options_page": "options.html",
     "devtools_page": "devtools.html",
     "debug": false,
@@ -44,6 +44,7 @@
         "smart/*.js",
         "sites/*.js",
         "css/*.css",
+        "html/*.html",
         "fonts/*.*",
         "images/*.png"
     ]

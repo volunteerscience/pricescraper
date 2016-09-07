@@ -39,11 +39,9 @@ function getContainer(vsid) {
     
 /* Generate a random string of LENGTH characters
 */
-function randomString(length)
-{
+function randomString(length) {
 	var str = "";
-	for(var i = 0; i < length; i++)
-	{
+	for(var i = 0; i < length; i++) {
 		var charCode = 0;
 		if(Math.random() < (26 / 36))
 			charCode = Math.floor(Math.random() * 26) + 97;
@@ -56,18 +54,36 @@ function randomString(length)
 	return str;
 }
 
+//function pullContext(entry, index) {
+//    var ctxt = null;
+//    for(var c in entry["ctxt"]) {
+//        for(var d in entry["ctxt"][c]) {
+//            if(d == index) {
+//                ctxt = entry["ctxt"][c][d];
+//                break;
+//            }
+//        }
+//    }
+//    
+//    return ctxt;
+//}
+
 function pullContext(entry, index) {
     var ctxt = null;
+    var labels = [];
     for(var c in entry["ctxt"]) {
-        for(var d in entry["ctxt"][c]) {
-            if(d == index) {
-                ctxt = entry["ctxt"][c][d];
-                break;
+        for(var i = 0; i < entry["ctxt"][c].length; i++) {
+            //console.log(JSON.stringify(entry["ctxt"][c]));
+            for(var j = 0; j < entry["ctxt"][c][i].price_index.length; j++) {
+                if(entry["ctxt"][c][i].price_index[j] == index) {
+                    labels.push(entry["ctxt"][c][i].name);   
+                }
             }
         }
     }
-    
-    return ctxt;
+    labels.sort();
+    //console.log(JSON.stringify(labels));
+    return JSON.stringify(labels);
 }
 
 function merge(ours, theirs, labels) {
@@ -189,7 +205,7 @@ function merge(ours, theirs, labels) {
                     //console.log(pullContext(theirs[bestMatch]["vs_price"], x));
                     var ctxt = pullContext(theirs[bestMatch]["vs_price"], x);
                     if(ctxt != null) {
-                        serverPriceHolder.append(ctxt + ": " + theirPrices[x] + "<br />");
+                        serverPriceHolder.append(JSON.parse(ctxt)[0] + ": " + theirPrices[x] + "<br />");
                         shouldAppend = true;
                     }
                     
@@ -478,7 +494,16 @@ function addClonedElements(ours, toClone, labels) {
         for(var x = 0; x < keys.length; x++) {
             if(labelSet.has(keys[x])) {
                 //console.log(keys[x]);
-                var matches = findElement([{"class-":"=" + keys[x].replace(":", "\\:")}], vs_elems);
+                var keyToUse = keys[x];
+                var op = "=";
+                if(keys[x].indexOf("vs_price::") == 0) {
+                    //console.log("PHEW PHEW HERE GOES");
+                    op = "+";
+                    //console.log("THE NAME IS: ");
+                    keyToUse = JSON.parse(keys[x].substr(10)).name;
+                    //console.log(keyToUse)
+                }
+                var matches = findElement([{"class-":(op + keyToUse)}], vs_elems);
                 //console.log("THE MATCHES ARE");
                 //console.log(matches);
                 
@@ -486,6 +511,10 @@ function addClonedElements(ours, toClone, labels) {
                 //console.log(infoArr);
                 //alert(JSON.stringify(infoArr));
                 for(var m = 0; m < matches.length; m++) {
+                    var par = $(matches[m]).parent();
+                    if(par.length > 0 && par.hasClass("clientOnly")) {
+                        $(matches[m]).unwrap();
+                    }
                     for(var type in infoArr) {
                         if(m < infoArr[type].length) 
                         {
@@ -561,21 +590,22 @@ function cloneElement(elem, donors, keySet) {
     return donors[bestDonorIndex];
 }
 
+var surveyTimeout = null;
 if(typeof chrome.runtime.onMessage != "undefined") { // ie not debug mode
     chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
+        vsSearchStarted = false;
         if(typeof window.merge_called == "undefined" && request.hasOwnProperty("merge")) {
             if(request.status == "success") {
                 $("#scrape_status").text("merging results");
                 window.merge_called = true;
                 merge(request.ours, request.theirs, request.labels);
-                setTimeout(surveyPopup, 2000);
+                surveyTimeout = setTimeout(surveyPopup, 60000); // wait one minute before showing the popup
             }
             else if(request.status == "fail") {
                 $("#scrape_status").text(request.msg);
                 setTimeout(disableInterface, 2000);
             }
-            //disableInterface();
         }
     });
 }
