@@ -1,25 +1,72 @@
 var execParse = false;
+var vsSearchStarted = false;
+
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if(request.hasOwnProperty("iframe_plugin")) {
+        var data = request.iframe_plugin;
+        if(data.hasOwnProperty("scrape_start")) {
+            execParse = true;
+            loadScrapeUI();
+        }
+        else if(data.hasOwnProperty("modal_closed")) {
+            if(execParse) {
+                execParse = false;
+                startParse();
+            }
+            else {
+                $("#vs_overlay_frame").remove();
+            }
+        }
+        else if(data.hasOwnProperty("survey_modal_closed")) {
+            $("#vs_modal_survey").remove();
+        }
+    }
+});
+
 function vs_init_ui() {
-    //alert("INJECTION");
-    
-    var vs_dialog = $('<div class="modal fade" id="vs_modal" role="dialog"> <div class="modal-dialog"> <!-- Modal content--> <div class="modal-content"> <div class="modal-header"> <button type="button" class="close" data-dismiss="modal">&times;</button> <h4 class="modal-title">Volunteer Science recognizes this site! Would you like to see how your results stack up?</h4> </div> <div class="modal-body"> <p>Volunteer Science can scrape the data on this page and show you how your results compare with those served to a "generic" user. If you click SURE, data from this page will be sent to our servers for analysis, and you will see the results immediately. If you want us to stop asking, click NEVER. Remember, you can always re-enable this site by clicking on the plugin icon!</p> </div> <div class="modal-footer"> <span id="sureButtonHolder"></span> <button type="button" class="btn btn-default" data-dismiss="modal">Close</button> </div> </div> </div> </div>');
-    var sureButton = $('<button id="sureButton" type="button" class="btn btn-success" data-dismiss="modal">Sure</button>');
-    vs_dialog.find("#sureButtonHolder").append(sureButton);
-    
-    sureButton.click(function() {
-        execParse = true;
-        loadScrapeUI();
-    });
-    
-    vs_dialog.on("hidden.bs.modal", function () {
-        if(execParse) {
-            centerOverlayBody();
+    if(!vsSearchStarted) {
+        var iframeSrc = chrome.extension.getURL('html/known_site.html');
+        var iframe = $("<iframe style='border:0 none; z-index: 10000000000; position:fixed; width: 100%; height: 100%;' src='" + iframeSrc + "' id='vs_overlay_frame'></iframe>");
+        iframe.prependTo('body');
+        iframe.load(function() {
+            messageIframe({"launch_main_modal": true});
+        });
+    }
+}
+
+function messageIframe(data) {
+    chrome.runtime.sendMessage({"plugin_iframe": data}, function(response) {});
+}
+
+function startParse() {
+    if(!vsSearchStarted) {
+        $("#scrape_status").text("scraping");
+        centerOverlayBody();
+        var vsidElems = document.getElementsByClassName("vsid");
+        if(vsidElems == null || vsidElems.length == 0) {
+            vsSearchStarted = true;
             vs_continue(); 
         }
-    });
-    
-    vs_dialog.prependTo('body');
-    vs_dialog.modal("show");
+        else {
+            $("#scrape_status").text("Hmm... looks like you scraped this page already...");
+            centerOverlayBody();
+            setTimeout(disableInterface, 2000);
+        }
+    }
+    else {
+        $("#scrape_status").text("Sorry.  Looks like a session is already underway...");
+        centerOverlayBody();
+        setTimeout(disableInterface, 2000);
+    }
+}
+
+function vs_init_ui_no_modal() {
+    if(surveyTimeout != null) {
+        //console.log("CLEARING INTERVAL");
+        clearTimeout(surveyTimeout);
+    }
+    loadScrapeUI();
+    startParse();
 }
 
 function loadScrapeUI() {
@@ -30,8 +77,8 @@ function loadScrapeUI() {
     $("body").addClass("vs_overlay");
     centerOverlayBody();
     
-     window.onresize = function() {
-       centerOverlayBody(); 
+    window.onresize = function() {
+        centerOverlayBody(); 
     };
 }
 
@@ -47,21 +94,15 @@ function centerOverlayBody() {
 function disableInterface() {
     $("#vs_overlay").fadeOut(500);
     $("#vs_overlay").remove();
+    $("#vs_overlay_frame").remove();
     $("body").removeClass("vs_overlay");
 }
 
 function surveyPopup() {
-    var survey_dialog = $('<div class="modal fade" id="vs_modal" role="dialog"> <div class="modal-dialog"> <!-- Modal content--> <div class="modal-content"> <div class="modal-header"> <button type="button" class="close" data-dismiss="modal">&times;</button> <h4 class="modal-title">Tell us more about you!</h4> </div> <div class="modal-body"> <p>Our researchers want to understand how price discrimination affects different groups.  By taking this survey, you are helping real data scientists decipher the tactics companies use to target customers.</p> </div> <div class="modal-footer"> <span id="sureButtonHolder"></span> <button type="button" class="btn btn-default survey_close" data-dismiss="modal">Close</button> </div> </div> </div> </div>');
-    var sureButton = $('<button id="sureButton" type="button" class="btn btn-success">Sure</button>');
-    survey_dialog.find("#sureButtonHolder").append(sureButton);
-    
-    sureButton.click(function() {
-        survey_dialog.find(".modal-dialog").css("width", "80%");
-        survey_dialog.find(".modal-body").html("<iframe src='https://volunteerscience.com/amt/test/ea8ba18bbe50aeabb127/' style='width:100%; height:500px;'></iframe>");
-        survey_dialog.find(".survey_close").text("Done");
-        sureButton.remove();
+    var iframeSrc = chrome.extension.getURL('html/known_site.html');
+    var iframe = $("<iframe style='border:0 none; z-index: 10000000000; position:fixed; width: 100%; height: 100%;' src='" + iframeSrc + "' id='vs_modal_survey'></iframe>");
+    iframe.prependTo('body');
+    iframe.load(function() {
+        messageIframe({"launch_survey_modal": true});
     });
-    
-    survey_dialog.prependTo('body');
-    survey_dialog.modal("show");
 }

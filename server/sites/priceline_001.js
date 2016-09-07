@@ -1,5 +1,3 @@
-var vsScraperVersion = "001";
-
 if(typeof window.vs_scraper == "undefined") {
     window.vs_scraper = true;
     vs_init();
@@ -7,7 +5,7 @@ if(typeof window.vs_scraper == "undefined") {
 
 function vs_init() {
     waitFor([{"class-":"=next"}, {"tag-":"=BUTTON"}], 1000, function() {
-        vs_init_ui();
+        vs_continue();
     });
 }
 

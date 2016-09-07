@@ -12,7 +12,7 @@ var nextStep = function() {};
 
 backgroundPageConnection.onMessage.addListener(function(message) {
     if(message.status == "continue") {
-        console.log("got the message back");
+        //console.log("got the message back");
         nextStep();
     }
     else if(message.status == "message") {
@@ -43,7 +43,7 @@ function setup() {
         for(var i = 0; i < inputs.length; i++) {
             typeNames.push($(inputs[i]).val());
         }
-        console.log(JSON.stringify(typeNames));
+        //console.log(JSON.stringify(typeNames));
         
         nextStep = function() {
             askForType(typeNames, 0);
@@ -77,6 +77,7 @@ function setup() {
             var obj = {};
             obj["scraper_" + name] = jsonArr;
             chrome.storage.local.set(obj, function() {
+                postToLog(JSON.stringify(jsonArr));
                 $("#saveHelper").hide();
             });
         }
@@ -205,21 +206,27 @@ var startedBuilder = false;
 function configBuilder() {
     if(!startedBuilder) {
         startedBuilder = true;
-        drawJSON(jsonArr, $("#builderFrame").contents().find("#holder"));
+        jsonArr = [{}];
+        //console.log("PASSING: " + JSON.stringify(jsonArr));
+        document.getElementById("builderFrame").contentWindow.renderJSON(jsonArr);
+        //console.log("ummm... did that work?");
+        //drawJSON(jsonArr, $("#builderFrame").contents().find("#holder"), "iframe");
     }
 }
 
 function showSelector(selector) {
     startedBuilder = true;
     jsonArr = selector;
-    $("#builderFrame").contents().find("#holder").empty();
-    drawJSON(selector, $("#builderFrame").contents().find("#holder"));
+    document.getElementById("builderFrame").contentWindow.resetHolder();
+    document.getElementById("builderFrame").contentWindow.renderJSON(jsonArr);
+    //$("#builderFrame").contents().find("#holder").empty();
+    //drawJSON(selector, $("#builderFrame").contents().find("#holder"), "iframe");
 }
 
 function askForType(typeNames, index) {
     $("#step-selections").show();
-    console.log("I've been called");
-    console.log(typeNames[index]);
+    //console.log("I've been called");
+    //console.log(typeNames[index]);
     $("#currentType").text(typeNames[index]);
     
     if(index < typeNames.length - 1) {

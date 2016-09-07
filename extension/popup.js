@@ -19,51 +19,39 @@ function getCurrentTab() {
 
     chrome.tabs.query(queryInfo, function (tabs) {
         currTab = tabs[0];
-        setTitle();
+        checkSupport();
+    });
+}
+
+function checkSupport() {
+    chrome.runtime.sendMessage({"query_support":true, "currURL":currTab.url}, function(response) {
+        console.log("here's what support is looking like.....");
+        console.log(response);
+        setTitle(response);
     });
 }
 
 var disableButton = $('<button type="button" class="btn btn-danger">Disable this site.</button>');
 var enableButton = $('<button type="button" class="btn btn-success">Enable this site.</button>');
 
-function setTitle() {
-    var siteFound = false;
-    for(var i = 0; i < supportedSites.length; i++) {
-        if(currTab.url.indexOf(supportedSites[i].site) == 0) {
-            siteFound = true;
-            (function() {
-                document.getElementById("title").innerHTML = supportedSites[i].name + ": supported site!";
-            
-                var siteName = supportedSites[i].name;
-                chrome.storage.local.get(supportedSites[i].name, function(obj) {
-                    if(typeof obj[siteName] == "undefined" || (typeof obj[siteName] != "undefined" && obj[siteName] == "enabled")) {
-                        createDisableButton(siteName);
-                    } 
-                    else if(obj[siteName] == "disabled") {
-                        createEnableButton(siteName);
-                    }
-                }); 
-            })();
-            break;
-        }
+function setTitle(support) {
+    console.log("support in setTitle: " + JSON.stringify(support));
+    if(support.base_support || support.trigger_support) {
+        document.getElementById("title").innerHTML = support.name + ": supported site!";
+        chrome.storage.local.get(support.name, function(obj) {
+            if(typeof obj[support.name] == "undefined" || (typeof obj[support.name] != "undefined" && obj[support.name] == "enabled")) {
+                createSearchAgainButton(support.trigger_support);
+                createDisableButton(support.name);
+            } 
+            else if(obj[support.name] == "disabled") {
+                createEnableButton(support.name);
+            }
+        }); 
     }
-    
-    // unsupported site
-    if(!siteFound) {
-        var sandboxButton = $('<button type="button" class="btn btn-success">Start Sandbox</button>');
-        $("#toggleDisable").html(sandboxButton);
-        sandboxButton.click(function() {
-            startSandbox(); 
-        });
-    }
-}
-
-function startSandbox() {
-    chrome.runtime.sendMessage({"trigger_sandbox": true}, function(response) {});
 }
 
 function createEnableButton(name) {
-    var enableButton = $('<button type="button" class="btn btn-success">Enable this site.</button>');
+    var enableButton = $('<button type="button" class="btn btn-success btn_padding">Enable this site.</button>');
     enableButton.click(function() {
         var obj = {};
         obj[name] = "enabled";
@@ -75,7 +63,7 @@ function createEnableButton(name) {
 }
                        
 function createDisableButton(name) {
-    var disableButton = $('<button type="button" class="btn btn-danger">Disable this site.</button>');
+    var disableButton = $('<button type="button" class="btn btn-danger btn_padding">Disable this site.</button>');
     disableButton.click(function() {
         var obj = {};
         obj[name] = "disabled";
@@ -84,6 +72,20 @@ function createDisableButton(name) {
         });
     });
     $("#toggleDisable").html(disableButton);
+}
+
+function createSearchAgainButton(triggerSupport) {
+    chrome.tabs.sendMessage(currTab.id, {"has_vsid":true}, function(response) {
+        if(!response.found_vsid && triggerSupport) {
+            var searchAgainButton = $('<button type="button" class="btn btn-success btn_padding">Compare Prices</button>');
+            searchAgainButton.click(function() {
+                // trigger another search somehow
+                chrome.tabs.sendMessage(currTab.id, {"popup_scrape": true}, function(response) {});
+                window.close(); 
+            });
+            $("#searchAgain").html(searchAgainButton);
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function () {

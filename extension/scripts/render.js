@@ -1,4 +1,5 @@
 var namedSets = {};
+var jsonArr = [];
 
 function generateContainer(type, flex_dir) {
     var container = '';
@@ -17,7 +18,8 @@ function generateContainer(type, flex_dir) {
     return $(container);
 }
 
-function drawJSON(jsonArr, holder) {
+function drawJSON(theJSON, holder) {
+    jsonArr = theJSON;
     var idPrefix = randomString(20) + "_arryID_";
     
     for(let i = 0; i < jsonArr.length; i++) {
@@ -32,58 +34,8 @@ function drawJSON(jsonArr, holder) {
     }
 }
 
-// Note, use this version of the function for iframes
-// for iframes, this is the ONLY CHANGE
-// use the commented version if it's not an iframe
-function bindArrayEvents(container, idPrefix) {
-    container.find(".destroy").click(function() {
-        var bf = $("#builderFrame").contents().find("#holder").contents();
-        var index = parseInt(container[0].id.substr(28));
-        
-        if(index > 0) {
-            var toChange = [];
-            for(var x = index + 1; x < jsonArr.length; x++) {
-                toChange.push(bf.filter(function() { return $(this).attr("id") == idPrefix + x; }));
-            }
-            for(var x = 0; x < toChange.length; x++) {
-                var oldIndex = parseInt(toChange[x].attr("id").substr(28));
-                toChange[x].attr("id", idPrefix + (oldIndex - 1));
-            }
-            jsonArr.splice(index, 1);
-
-            container.remove();
-        }
-    });
-    
-    container.find(".addElement").click(function() {
-        var bf = $("#builderFrame").contents().find("#holder").contents();
-        
-        var index = parseInt(container[0].id.substr(28)) + 1;
-        var toChange = [];
-        for(var x = index; x < jsonArr.length; x++) {
-            toChange.push(bf.filter(function() { return $(this).attr("id") == idPrefix + x; }));
-        }
-        for(var x = 0; x < toChange.length; x++) {
-            var oldIndex = parseInt(toChange[x].attr("id").substr(28));
-            toChange[x].attr("id", idPrefix + (oldIndex + 1));
-        }
-        
-        let newContainer = generateContainer("array", "flex-vertical");
-        newContainer.find(".hide").removeClass("hide").addClass("addElement").html('<i class="material-icons">add</i>');
-        newContainer.attr("id", idPrefix + index);
-        var sibling = bf.filter(function() { return $(this).attr("id") == idPrefix + (index - 1); });
-        newContainer.insertAfter(sibling);
-        
-        var newElement = {};
-        jsonArr.splice(index, 0, newElement);
-        resolveType(newElement, newContainer.find(".content")).draw();
-        
-        bindArrayEvents(newContainer, idPrefix);
-    });
-}
-
 /* NOTE: USE THIS VERSION FOR NON IFRAMES ONLY CHANGE */
-/*function bindArrayEvents(container, idPrefix) {
+function bindArrayEvents(container, idPrefix) {
     container.find(".destroy").click(function() {
         var index = parseInt(container[0].id.substr(28));
         
@@ -125,7 +77,7 @@ function bindArrayEvents(container, idPrefix) {
         
         bindArrayEvents(newContainer, idPrefix);
     });
-}*/
+}
 
 function SetOp(obj, ctx, container) {
     this.obj = obj;
@@ -444,7 +396,7 @@ Desc.prototype.draw = function() {
     
     var toDraw = resolveType(this.obj.desc[0], ctx);//.draw();
     
-    console.log(toDraw);
+    //console.log(toDraw);
     toDraw.draw();
 }
 
@@ -870,7 +822,7 @@ Chain.prototype.blankLink = function(id) {
     var header =  $(headerString);
     
     var select = generateSelect(["id", "class", "prop", "contents", "tag", "parent", "child",
-                                    "sibling", "nav", "left", "right", "above", "below", "distance", "visibility", "deepest"]);
+                                    "sibling", "nav", "distance", "visibility", "deepest"]);
     
     var _this = this;
     select.change(function(e) {
@@ -897,27 +849,39 @@ Chain.prototype.specialize = function(type, link, hasContent) {
         link.find(".linkHeader").find("select").val(type);
     }
     
-    var relatives = new Set(["parent", "child", "sibling", "left", "right", "above", "below", "distance"]);
+    var relatives = new Set(["parent", "child", "sibling", "distance"]);
     
     let _this = this;
     if(type == "id") {
-        var equality = generateSelect(["=", "+"]);
-        equality.css("width:15%");
-        equality.css("margin:2px");
+        var equality = $("<input type='text' style='width:15%; margin:2px' />");
         equality.addClass("idOpVal");
         var text = $("<input type='text' class='idVal' style='width:70%; margin:2px'/>");
         body.append(equality);
         body.append(text);
         
-        //equality.change(function() { _this.serializeLink(link) });
+        equality.keyup(function() { _this.serializeLink(link) });
         text.keyup(function() { _this.serializeLink(link) });
         
-        if(hasContent) {   
+        /*if(hasContent) {   
             var val = this.chain[linkIndex]["id-"];
             var op = val[0];
             var id = val.substr(1);
             equality.val(op);
             text.val(id);
+        }*/
+        if(hasContent) {   
+            var val = this.chain[linkIndex]["id-"];
+            var op = val[0];
+            var idName = val.substr(1);
+            
+            if(op == "[") {
+                var closeIndex = val.indexOf("]");
+                op = val.substr(0, closeIndex + 1);
+                idName = val.substr(closeIndex + 1);
+            }
+            
+            equality.val(op);
+            text.val(idName);
         }
     }
     else if(type == "class") {
@@ -1078,12 +1042,12 @@ Chain.prototype.serializeLink = function(link) {
     var id = link[0].id;
     var type = link.find(".linkHeader").find("select").val();
     
-    console.log("my type is " + type);
+    //console.log("my type is " + type);
     
     if(type == "id") {
         var name = link.find(".idVal").val();
         var op = link.find(".idOpVal").val();
-        console.log(name + ", " + op);
+        //console.log(name + ", " + op);
         
         var prefix = "id-";
         var postfix = op + name;
@@ -1092,7 +1056,7 @@ Chain.prototype.serializeLink = function(link) {
     else if(type == "class") {
         var name = link.find(".classVal").val();
         var op = link.find(".classOpVal").val();
-        console.log(name + ", " + op);
+        //console.log(name + ", " + op);
         
         var prefix = "class-";
         var postfix = op + name;
@@ -1101,17 +1065,17 @@ Chain.prototype.serializeLink = function(link) {
     else if(type == "prop") {
         var type = link.find(".propType").val();
         var val = link.find(".propVal").val();
-        console.log(type + ", " + val);
+        //console.log(type + ", " + val);
         
         var prefix = "prop-" + type;
-        var postfix = "=" + val;
+        var postfix = val;
         this.chain[index][prefix] = postfix;
     }
     else if(type == "contents") {
         var op = link.find(".contentsOpVal").val();
         var contents = link.find(".contentsVal").val();
         var length = link.find(".lengthVal").val();
-        console.log(op + ", " + contents + ", " + length);
+        //console.log(op + ", " + contents + ", " + length);
         
         var prefix = "contents-" + length;
         var postfix = op + contents;
@@ -1119,7 +1083,7 @@ Chain.prototype.serializeLink = function(link) {
     }
     else if(type == "tag") {
         var tag = link.find(".tagVal").val();
-        console.log(tag);
+        //console.log(tag);
         
         var prefix = "tag-";
         var postfix = "=" + tag;
@@ -1127,7 +1091,7 @@ Chain.prototype.serializeLink = function(link) {
     }
     else if(type == "visibility") {
         var visVal = link.find(".visVal").val();
-        console.log(visVal);
+        //console.log(visVal);
         
         var prefix = "visiblity-";
         var postfix = "=" + visVal;
@@ -1135,7 +1099,7 @@ Chain.prototype.serializeLink = function(link) {
     }
     else if(type == "deepest") {
         var deepVal = link.find(".deepVal").val();
-        console.log(deepVal);
+        //console.log(deepVal);
         
         var prefix = "deepest-";
         var postfix = "=" + deepVal;
@@ -1152,23 +1116,11 @@ Chain.prototype.serializeLink = function(link) {
     }
     else if(type == "nav") {
         var seq = link.find(".seqVal").val();
-        console.log(seq);
+        //console.log(seq);
         
         var prefix = "nav-";
         var postfix = seq;
         this.chain[index][prefix] = postfix;
-    }
-    else if(type == "left") {
-        //alert(JSON.stringify(this.chain[index]));
-    }
-    else if(type == "right") {
-        //alert("HELLO" + JSON.stringify(this.chain[index]));
-    }
-    else if(type == "above") {
-        
-    }
-    else if(type == "below") {
-        
     }
     else if(type == "distance") {
         

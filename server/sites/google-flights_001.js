@@ -9,7 +9,7 @@ function vs_init() {
     var flightNumButton = [{"contents-100":"[+lt]longer"}, {"contents-100":"[+lt]expensive"}];
     
     waitFor(flightNumButton, 1000, function(flightsButton) {
-        //alert("button came");
+        //console.log("button came");
         vs_init_ui();
     });
 }
@@ -17,7 +17,7 @@ function vs_init() {
 function vs_continue() {
     var flightNumButton = findElement([{"contents-100":"[+lt]longer"}, {"contents-100":"[+lt]expensive"}]);
     if($(flightNumButton).text().toLowerCase().indexOf("show") >= 0) {
-        //alert("We need to expand the flights");
+        //console.log("We need to expand the flights");
         var lessFlights = [{"contents-100":"[+lt]hide"}, {"contents-100":"[+lt]longer"}, {"contents-100":"[+lt]expensive"}];
         $(flightNumButton).trigger("click");
         waitFor(lessFlights, 1000, function(lessFlightsButton) {

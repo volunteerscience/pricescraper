@@ -8,3 +8,12 @@ function vs_scraper_done(labels) {
 function getVSData() {
     return vs_data;
 }
+
+function vs_init_ui() {
+    console.log("continuing");
+    vs_continue();
+}
+
+function disableInterface() {
+    console.log("interface disabled");
+}
