@@ -6,8 +6,11 @@ if(typeof window.vs_scraper == "undefined") {
 }
 
 function vs_init() {
-    //console.log("init called");
     vs_init_ui();
+}
+
+function vs_precapture(cb) {
+    cb();
 }
 
 function vs_continue() {

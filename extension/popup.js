@@ -90,5 +90,14 @@ function createSearchAgainButton(triggerSupport) {
 
 document.addEventListener('DOMContentLoaded', function () {
     console.log("VS popup loaded");
+    $("#survey_link").click(function() {
+        chrome.tabs.create({'url': "/options.html#survey" } );
+    });
+    $("#learn_more_link").click(function() {
+        chrome.tabs.create({'url': "/options.html#learn" } );
+    });
+    $("#manage_link").click(function() {
+        chrome.tabs.create({'url': "/options.html#manage" } );
+    });
     getCurrentTab();
 });

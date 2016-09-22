@@ -29,7 +29,7 @@
         </ul>
     </nav>
     
-    <div class="container-fluid donate activeTab" style="margin:20px">
+    <div class="container-fluid donate activeTab" style="margin:20px; display:none;">
         <div class="row">
             <div class="page-header">
                 <h1>
@@ -49,9 +49,21 @@
                     <label for="cookies">Donate your cookies?</label>
                     <input type="checkbox" id="cookieCheckbox" name="cookies" />
                 </p>
+                <p>
+                    <button type="button" class="btn btn-success" id="donateButton">Donate</button>
+                </p>
             </div>
         </div> 
-        <button type="button" class="btn btn-success" id="donateButton">Donate</button>
+        <div class="row">
+            <div class="page-header">
+                <h1>
+                    Join our mailing list!
+                </h1>
+            </div>
+            <p>Enter your email address here.  We'll send you information about our latest experiments, and we'll let you know how you can help our researchers make exciting discoveries!</p>
+            <p><input type="text" id="emailField" name="email" placeholder="email" /></p>
+            <p><button type="button" class="btn btn-success" id="emailButton">Submit</button></p>
+        </div>
     </div>
     
     <div class="container-fluid docs" style="margin:20px; display:none;">
@@ -188,7 +200,7 @@
                 <p>If everything goes well, the finished scraper will appear in the builder tab.  If you're not a developer, you don't have to worry too much about that scary looking graphic, but it really isn't as bad as it looks.  All of its components are explained in this PDF (which doesn't exist yet, but will soon!).  Using the four buttons, which are highlighted in yellow at the the top, you can save your scraper, load a saved scraper, merge two scrapers, and run your scraper to see what it extracts from the page.  Saving and Opening are pretty self-explanatory, but we'll go over Merging and Running in more detail.</p>
                 <p><img src="images/docs/generatedScraper.PNG" class="img-rounded img-responsive"/></p>
                 
-                <p>The auto-generated scrapers have a tendency to overfit the data.  In the printer example, for instance, Snatcher saw that every produt title contained the word <em>printer</em>, so it decided all product listings on Staples.com probably use this word.  To fix that, save the printer scraper, open a new tab (or restart DevTools), and run a new search for something else.  Repeat all the previous steps and generate a new scraper.  Save that scraper and then click U-shaped magnet.  Select two or more scrapers you'd like to merge and then click the checkbox button.  The merged scraper should appear immediately.  Here, I ran a search for office chairs.  When I merged the office chair scraper with the printer selector, Snatcher took what was common between them and left out the rest, thereby solving the overfit problem.</p>
+                <p>The auto-generated scrapers have a tendency to overfit the data.  In the printer example, for instance, Snatcher saw that every produt title contained the word <em>printer</em>, so it decided all product listings on Staples.com probably use this word.  To fix that, save the printer scraper, open a new tab (or restart DevTools), and run a new search for something else.  Repeat all the previous steps and generate a new scraper.  Save that scraper and then click the U-shaped magnet.  Select two or more scrapers you'd like to merge and then click the checkbox button.  The merged scraper should appear immediately.  Here, I ran a search for office chairs.  When I merged the office chair scraper with the printer selector, Snatcher took what was common between them and left out the rest, thereby solving the overfit problem.</p>
                 <p><img src="images/docs/mergeSelections.PNG" class="img-rounded img-responsive"/></p>
                 <p><img src="images/docs/overfit.PNG" class="img-rounded img-responsive"/></p>
                 <p><img src="images/docs/mergedSelector.PNG" class="img-rounded img-responsive"/></p>
@@ -200,7 +212,7 @@
     </div>
     
     <div class="container-fluid survey" style="margin:20px; display:none;">
-        <iframe src='https://volunteerscience.com/amt/test/ea8ba18bbe50aeabb127/' style='width:100%; height:80%;'></iframe>
+        <!--<iframe src='https://volunteerscience.com/amt/test/ea8ba18bbe50aeabb127/' style='width:100%; height:80%;'></iframe>-->
     </div>
     
 </body>

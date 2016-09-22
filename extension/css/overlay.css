@@ -20,19 +20,31 @@
     font-size: 25px;
 }
 
-#vs_spinner {
-    animation-name: rotate; 
-    animation-duration: 3s; 
-    animation-iteration-count: infinite;
-    animation-timing-function: linear;
-}
-
 .vs_overlay {
     overflow: hidden;
     margin: 0px;
 }
 
+/* http://stackoverflow.com/questions/6410730/how-to-do-a-webkit-css-endless-rotation-animation */
+#vs_spinner {
+    -webkit-animation: rotating 3s linear infinite;
+    animation: rotating 3s linear infinite;
+}
+
+/*#vs_spinner {
+    animation-name: rotate; 
+    animation-duration: 3s; 
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}*/
+            
 @keyframes rotate {
     from {transform: rotate(0deg);}
     to {transform: rotate(360deg);}
+}
+
+/* target old versions of Chrome (<43) */
+@-webkit-keyframes rotating {
+    from {-webkit-transform: rotate(0deg);}
+    to {-webkit-transform: rotate(360deg);}
 }

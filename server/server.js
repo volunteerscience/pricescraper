@@ -3,6 +3,8 @@ var express = require('express');
 var bodyParser = require("body-parser");
 var Horseman = require('node-horseman');
 var fs = require('fs');
+var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+var request = require('request');
 
 var app = express();
 
@@ -14,16 +16,44 @@ app.use(bodyParser.json());
 
 app.use('/', express.static('static'));
 
-app.get('/test', function (req, res) {
+app.get('/test', function(req, res) {
     res.send('PriceCompare Path: ' + req.url);
 });
 
-app.post('/reportPrice', function (req, res) {
+app.post('/reportPrice', function(req, res) {
     console.log('Report Price: ' + req.url);
     console.log("Version: " + req.body.version);
     console.log("coming from: " + req.body.url);
-    scrape(res, req.body.url, req.body.version);
+    scrape(res, req/*req.body.url, req.body.version, req.body.vs_prices*/);
 });
+
+app.post('/uploadImage', function(req, res) {
+    console.log("sending image " + req.body.instance_id);
+    //uploadImage(req.body.instance_id + "_server");
+    uploadIfExists(req.body.instance_id + "_server", "screenshots/" + req.body.instance_id + "_server.png");
+    res.send({"status": "success"});
+});
+
+function uploadIfExists(keyname, filename) {
+    var totalTime = 0;
+    var pause = 15000;
+    var maxTime = 90000;
+    checker();
+    
+    function checker() {
+        console.log("in checker");
+        checkForFile(filename, function(exists) {
+            if(exists) {
+                console.log("file exists");
+                uploadImage(keyname, filename);
+            }
+            else if(totalTime < maxTime) {
+                setTimeout(checker, pause);
+                totalTime += pause;
+            }
+        });
+    }
+}
 
 //Lets start our app
 app.listen(PORT, function() {
@@ -32,10 +62,17 @@ app.listen(PORT, function() {
 });
 
 var supportedSites = [
-    {"base_url": ["^https://www.google.com/flights/"], "trigger_url": ["^https://www.google.com/flights/#search"], "name": "Google Flights", "script": "google-flights"},
-    {"base_url": ["^https://www.amazon.com/"], "trigger_url": ["^https://www.amazon.com/s/"], "name": "Amazon", "script": "amazon"},
-    {"base_url": ["^https://www.priceline.com/"], "trigger_url": ["^https://www.priceline.com/stay/#/search/"], "name": "Priceline", "script": "priceline"}
+    {"base_url": ["https://www.google.com/flights/"], "trigger_url": ["^https:\\/\\/www\\.google\\.com\\/flights\\/\\?f=0#search.*", "^https:\\/\\/www\\.google\\.com\\/flights\\/#search.*"], "name": "Google Flights", "script": "google-flights"},
+    {"base_url": ["https://www.amazon.com/"], "trigger_url": ["https://www.amazon.com/s/"], "name": "Amazon", "script": "amazon"},
+    {"base_url": ["https://www.priceline.com/"], "trigger_url": ["https://www.priceline.com/stay/#/search/"], "name": "Priceline", "script": "priceline"}
 ];
+
+function checkForFile(filename, cb) {
+    console.log("checking for " + filename);
+    fs.stat(filename, function(err, stats) {
+        cb(err == null);
+    });
+}
 
 // url
 // type is one of 'base_url' or 'trigger_url'
@@ -52,14 +89,15 @@ function checkSupport(url, type) {
     return {"status": false};
 }
 
-function scrape(result, url, version) {
+function scrape(result, req/*url, version, clientData*/) {
     var scraperScript = null;
-    var support = checkSupport(url, "trigger_url");
+    var support = checkSupport(/*url*/req.body.url, "trigger_url");
     if(support.status) {
         scraperScript = support.script;
-        fs.stat("sites/" + scraperScript + "_" + version + ".js", function(err, stats) {
+        fs.stat("sites/" + scraperScript + "_" + /*version*/req.body.version + ".js", function(err, stats) {
            if(err == null) {
-               loadPage(result, url, scraperScript + "_" + version);
+               //loadPage(result, url, scraperScript + "_" + req.body.version, clientData);
+               loadPage(result, req, scraperScript + "_" + req.body.version);
            } 
            else {
                console.log("unsupported site");
@@ -69,9 +107,13 @@ function scrape(result, url, version) {
            }
         });
     }
+    else {
+        console.log("scrape failed because site unsupported");
+        result.send(JSON.stringify({"status": "fail", "msg": "Unsupported site."}));
+    }
 }
 
-function loadPage(result, url, scraperScript) {
+function loadPage(result, req, scraperScript/*url, scraperScript, clientData*/) {
     if(scraperScript == null) {
         console.log("scrape failed because site unsupported");
         result.send(JSON.stringify({"status": "fail", "msg": "Unsupported site."}));
@@ -90,7 +132,7 @@ function loadPage(result, url, scraperScript) {
             //console.log(msg);
         })
         .on('error', console.error)
-        .open(url)
+        .open(/*url*/req.body.url)
         .status()
         .then(function (statusCode) {
             if (Number(statusCode) >= 400) {
@@ -134,9 +176,66 @@ function loadPage(result, url, scraperScript) {
         .then(function(msg) {
             //console.log("LENGTH: " + msg);
             console.log("parsing complete");
-            result.send(JSON.stringify({"status": "success", "msg": msg}));
-            page
-                .screenshot("test8.png")
-                .close();
+            var instance_id = randomString(50);
+
+            result.send(JSON.stringify({"status": "success", "msg": msg, "instance_id": instance_id}));
+
+            var time = Date.now();
+            page.screenshot("screenshots/" + instance_id + "_server.png").then(function() {
+                console.log(Date.now() - time);
+                var toSend = {  "client_data": req.body.vs_prices, 
+                                "server_data": msg, 
+                                "instance_id": instance_id,
+                                "pid": req.body.pid,
+                                "url": req.body.url     };
+
+                vsRequest("personalization/create_scrape_data/", toSend, function() {
+                    console.log("data submitted to vs remote");
+                });
+
+                page.close();   
+            });
         });
+}
+
+//var vs_url = "http://localhost:8000/";
+var vs_url = "https://volunteerscience.com/";
+function vsRequest(url, data, cb) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open('POST', vs_url + url);
+    xhttp.responseType = 'json';
+    xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhttp.responseType = 'json';
+    xhttp.onload = function() {
+        if(typeof cb == "function") {
+            cb(xhttp.response);
+        }
+    };
+    xhttp.send(JSON.stringify(data));
+}
+
+function randomString(length) {
+	var str = "";
+	for(var i = 0; i < length; i++) {
+		var charCode = 0;
+		if(Math.random() < (26 / 36))
+			charCode = Math.floor(Math.random() * 26) + 97;
+		else
+			charCode = Math.floor(Math.random() * 10) + 48;
+			
+		str += String.fromCharCode(charCode);
+	}
+	
+	return str;
+}
+
+function uploadImage(keyname, filename) {
+    var r = request.post(vs_url + 'personalization/upload_scrape_image/', function(err, httpResponse, body) {
+        if(err) {
+            return console.error('upload failed:', err);
+        }
+        console.log("UPLOAD SUCCEEDED! " + body);
+    });
+    var form = r.form();
+    form.append(keyname, fs.createReadStream(filename));
 }
