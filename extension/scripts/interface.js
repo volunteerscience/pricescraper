@@ -75,11 +75,20 @@ function loadScrapeUI() {
     
     vs_overlay.prependTo('body');
     $("body").addClass("vs_overlay");
+    //$("#vs_overlay").css("display", "none");
+    setTimeout(centerOverlayBody, 200); // this is hacky (todo: figure out why it isn't centered correctly)
     centerOverlayBody();
     
     window.onresize = function() {
         centerOverlayBody(); 
-    };
+    }; 
+    
+    /*vs_precapture(function() {
+        capturePage(function() {
+            $("body").addClass("vs_overlay");
+            $("#vs_overlay").css("display", "inline");
+        }); 
+    });*/
 }
 
 function centerOverlayBody() {

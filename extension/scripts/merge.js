@@ -87,6 +87,8 @@ function pullContext(entry, index) {
 }
 
 function merge(ours, theirs, labels) {
+    var diffNum = 0;
+    
     if(ours.length == 0 || theirs.length == 0) {
         $("#scrape_status").text("no results found... quitting");
         setTimeout(disableInterface, 2000);
@@ -103,10 +105,6 @@ function merge(ours, theirs, labels) {
             
             var ourElems = $(".vs_price", "[vsid=" + ours[i].vsid + "]");
   
-            
-            
-            
-            
             var ourPrices = ours[i]["vs_price"]["text"];
             var theirPrices = theirs[bestMatch]["vs_price"]["text"];
             
@@ -150,7 +148,7 @@ function merge(ours, theirs, labels) {
                 //var ourPrice = 
                 //var theirPrice = theirPrices[priceMatches[x].penaltyArr[0].theirIndex];
                 
-                var orderDiff = ours[i].index - theirs[bestMatch].index;
+                var orderDiff = theirs[bestMatch].index - ours[i].index;
                 var orderDiffStr = "" + orderDiff;
                 if(orderDiff > 0) {
                     orderDiffStr = "+" + orderDiffStr;
@@ -158,10 +156,10 @@ function merge(ours, theirs, labels) {
                 
                 var orderTitle = "";
                 var plurality = Math.abs(orderDiff) == 1 ? "" : "s";
-                if(orderDiff < 0) {
+                if(orderDiff > 0) {
                     orderTitle = "You saw this result " + Math.abs(orderDiff) + " position" + plurality + " HIGHER.";
                 }
-                else if(orderDiff > 0) {
+                else if(orderDiff < 0) {
                     orderTitle = "You saw this result " + Math.abs(orderDiff) + " position" + plurality + " LOWER.";
                 }
                 else {
@@ -177,9 +175,11 @@ function merge(ours, theirs, labels) {
 
                     //console.log(ourPrice.dollarValue() + "::" + theirPrice.dollarValue());
                     if(ourPrice.dollarValue() > theirPrice.dollarValue()) {
+                        diffNum++;
                         priceClass = "serverLess";
                     }
                     else if(ourPrice.dollarValue() < theirPrice.dollarValue()) {
+                        diffNum++;
                         priceClass = "serverMore";
                     }
                     
@@ -250,6 +250,8 @@ function merge(ours, theirs, labels) {
     $(".serverPriceHolder").attr("title", "Price variants in this box were visible only to the server.");
     
     disableInterface();
+    
+    return diffNum;
 }
 
 function resolveTopParent(elem) {
@@ -321,13 +323,15 @@ function findBestMatch(ours, theirs, index, labels) {
                     if(theirData[type].length == ourData[type].length) {
                         //console.log(JSON.stringify(theirData[type]) + "\n" + JSON.stringify(ourData[type]) + "\n");
                         var matchNum = 0;
-                        var usedIndeces = new Set();
+                        //var usedIndeces = new Set();
+                        var usedIndeces = {};
                         for(var x = 0; x < ourData[type].length; x++) {
                             for(var y = 0; y < theirData[type].length; y++) {
-                                if((ourData[type][x] == theirData[type][y] && !usedIndeces.has(y)) ||
+                                if((ourData[type][x] == theirData[type][y] && !(y in usedIndeces)) ||
                                     sameStart(ourData[type][x], theirData[type][y])) {
                                     matchNum++;
-                                    usedIndeces.add(y);
+                                    //usedIndeces.add(y);
+                                    usedIndeces[y] = true;
                                 }
                             }
                         }
@@ -444,12 +448,14 @@ function copyExclude(obj, exc) {
 
 function addClonedElements(ours, toClone, labels) {
     var allLabels = labels["mandatory-labels"].concat(labels["data-labels"]);
-    var labelSet = new Set();
+    //var labelSet = new Set();
+    var labelSet = {};
     var labelLookup = {};
     
     //console.log("alive on 369");
     for(var i = 0; i < allLabels.length; i++) {
-        labelSet.add(Object.keys(allLabels[i])[0]);
+        //labelSet.add(Object.keys(allLabels[i])[0]);
+        labelSet[Object.keys(allLabels[i])[0]] = true;
         labelLookup[Object.keys(allLabels[i])[0]] = allLabels[i][Object.keys(allLabels[i])[0]];
     }
     
@@ -552,7 +558,7 @@ function cloneElement(elem, donors, keySet) {
     var bestDonorIndex = -1;
     var minPenalty = 50000000;
     
-    var elemKeys = _.intersection(Object.keys(elem), [...keySet]);
+    var elemKeys = _.intersection(Object.keys(elem), /*[...keySet]*/Object.keys(keySet));
     
     var matches = [];
     //console.log("alive on 450");
@@ -560,7 +566,7 @@ function cloneElement(elem, donors, keySet) {
         //console.log("alive on 452");
         var penalty = 0;
         
-        var donorKeys = _.intersection(Object.keys(donors[i]), [...keySet]);
+        var donorKeys = _.intersection(Object.keys(donors[i]), /*[...keySet]*/Object.keys(keySet));
         //alert(JSON.stringify(donorKeys));
         //console.log("alive on 457");
         //console.log(elemKeys);
@@ -599,8 +605,21 @@ if(typeof chrome.runtime.onMessage != "undefined") { // ie not debug mode
             if(request.status == "success") {
                 $("#scrape_status").text("merging results");
                 window.merge_called = true;
-                merge(request.ours, request.theirs, request.labels);
-                surveyTimeout = setTimeout(surveyPopup, 60000); // wait one minute before showing the popup
+                diffNum = merge(request.ours, request.theirs, request.labels);
+                var takeSnap = false;
+                setTimeout(function() {
+                    if(diffNum >= 0) {
+                        takeSnap = confirm("Notable price personalization was detected on this page.  Can we take a screenshot?");
+                        if(takeSnap) {
+                            snap(request.instance_id, function() {
+                                surveyTimeout = setTimeout(surveyPopup, 60000); 
+                            });   
+                        }
+                    }
+                    if(!takeSnap) {
+                        surveyTimeout = setTimeout(surveyPopup, 60000); // wait one minute before showing the popup   
+                    }
+                }, 500); // give interface a chance to hide itself
             }
             else if(request.status == "fail") {
                 $("#scrape_status").text(request.msg);

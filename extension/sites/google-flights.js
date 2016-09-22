@@ -9,7 +9,6 @@ function vs_init() {
     var flightNumButton = [{"contents-100":"[+lt]longer"}, {"contents-100":"[+lt]expensive"}];
     
     waitFor(flightNumButton, 1000, function(flightsButton) {
-        //alert("button came");
         vs_init_ui();
     });
 }

@@ -9,9 +9,10 @@ function vs_scraper_done(labels, params_blacklist) {
         }
     }
 
-    chrome.runtime.sendMessage({"vs_prices": ours, "labels": labels, "url":url, "version":vsScraperVersion}, function(response) {
-        $("#scrape_status").text("waiting for server");
-    });
+    chrome.runtime.sendMessage({"vs_prices": ours, "labels": labels, "url":url, "version":vsScraperVersion}, function(response) {});
+    // this callback is unreliable between Chrome versions, so I'm not using it
+    
+    $("#scrape_status").text("waiting for server");
 }
 
 chrome.runtime.onMessage.addListener(

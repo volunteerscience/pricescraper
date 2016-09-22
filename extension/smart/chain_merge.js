@@ -129,7 +129,7 @@ function EvalSetOp_C(data, chains) {
     
     //console.log("caller Nicole");
     resolve_C(set1Data, chains);
-    //console.log("caller Eliza");
+    //console.log("caller Dan");
     resolve_C(set2Data, chains);
 }
 
@@ -139,7 +139,7 @@ function EvalUniOp_C(data, chains) {
     var val = data.obj[op];
     
     var newData = {"obj":val, "parent":data.obj, "params":data.params};
-    //console.log("caller Ashley");
+    //console.log("caller Marc");
     resolve_C(newData, chains);
 }
 
@@ -164,12 +164,12 @@ function EvalDesc_C(data, chains) {
     
     if(Object.keys(data.params).length > 0) {
         var newData = {"obj":desc, "parent":data.obj, "params":data.params};
-        //console.log("caller Devanshi");
+        //console.log("caller Adam");
         resolve_C(newData, chains);
     }
     else {
         var newData = {"obj":desc, "parent":data.obj};
-        //console.log("caller Nadine");
+        //console.log("caller Eli");
         resolve_C(newData, chains);
     }
 }
@@ -182,11 +182,11 @@ function EvalRef_C(data, chains) {
 function resolveSafe_C(data, chains) {
     //console.log("resolving safely");
     if(typeof data.params == "object") {
-        //console.log("caller Leighton");
+        //console.log("caller Ari");
         resolve_C({"obj":JSON.parse(JSON.stringify(data.obj)), "parent":JSON.parse(JSON.stringify(data.parent)), "params":JSON.parse(JSON.stringify(data.params))}, chains);
     }
     else {
-        //console.log("caller Jenn");
+        //console.log("caller Walley");
         resolve_C({"obj":JSON.parse(JSON.stringify(data.obj)), "parent":JSON.parse(JSON.stringify(data.parent))}, chains);
     }
 }
@@ -224,7 +224,7 @@ function resolve_C(data, chains) {
 
 function collectChains(json) {
     var chains = [];
-    //console.log("caller Julia");
+    //console.log("caller Shifu");
     resolve_C({"obj":json, "parent":{}}, chains);
     return chains;
 }

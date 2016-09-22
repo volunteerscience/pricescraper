@@ -18,6 +18,18 @@ function init() {
         }
     });
     
+    $("#emailButton").click(function() {
+        var email = $("#emailField").val().trim();
+        if(validateEmail(email)) {
+            chrome.runtime.sendMessage({"userEmail": email}, function(response) {
+               console.log("email processed"); 
+            });
+        }
+        else {
+            alert("Please enter a valid email address");
+        }
+    });
+    
     $("#learnTab").click(function() {
         showDocs();
     });
@@ -27,6 +39,16 @@ function init() {
     $("#surveyTab").click(function() {
         showSurvey();
     });
+}
+
+// borrowed from http://www.w3schools.com/js/tryit.asp?filename=tryjs_form_validate_email
+function validateEmail(email) {
+    var atpos = email.indexOf("@");
+    var dotpos = email.lastIndexOf(".");
+    if (atpos < 1 || dotpos < atpos + 2 || dotpos + 2 >= email.length) {
+        return false;
+    }
+    return true;
 }
 
 function checkPermissions() {
@@ -83,11 +105,12 @@ function showSurvey() {
 
     $(".survey").show();
     $(".survey").addClass("activeTab");
+    $(".survey").html("<iframe src='https://volunteerscience.com/amt/test/ea8ba18bbe50aeabb127/' style='width:100%; height:80%;'></iframe>");
 }
 
 window.onload = function() {
     var hash = window.location.hash;
-    if(hash == "#manage") {
+    if(hash == "#manage" || hash == "") {
         showDonate();
     }
     else if(hash == "#learn") {

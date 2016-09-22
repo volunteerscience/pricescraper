@@ -181,10 +181,36 @@ function setup() {
         $("#generator").hide();
         $("#log").hide();
         $("#gallery").show();
+        loadGalleryInfo();
     });
     
     $(".glyphicon-remove-circle").click(function() {
         $("#logBody").text(""); 
+    });
+    
+    $("#submit-scraper").click(function() {
+        var name = $(".galleryList").val();
+        var url = $("#scraperURL").val();
+        if(url.length == 0) {
+            alert("Please specify a URL");
+            return;
+        }
+        chrome.storage.local.get("scraper_" + name, function(obj) {
+            jsonArr = obj["scraper_" + name];
+            backgroundPageConnection.postMessage({
+                name: 'scraperSubmission',
+                data: {'block': jsonArr, 'url': url},
+                tabId: chrome.devtools.inspectedWindow.tabId
+            });
+        });
+    });
+}
+
+function loadGalleryInfo() {
+    getScrapers(function(nameList) {
+        var scraperSelect = generateSelect(nameList);
+        scraperSelect.addClass("galleryList");
+        $("#scraperListGallery").html(scraperSelect);
     });
 }
 

@@ -3,14 +3,10 @@ var vs_url = "https://volunteerscience.com/";
 //var reportURL = "http://localhost:7677/reportPrice/";
 //var vs_url = "http://localhost:8000/";
 
-/*var supportedSites = [{"site": "https://www.google.com/flights/#search", "script":"google-flights", "name": "Google Flights"},
-                      {"site": "https://www.amazon.com/s/", "script":"amazon", "name": "Amazon"},
-                      {"site": "https://www.priceline.com/stay/", "script":"priceline", "name": "Priceline"}];*/
-
 var supportedSites = [
-    {"base_url": ["^https://www.google.com/flights/"], "trigger_url": ["^https://www.google.com/flights/#search"], "name": "Google Flights", "script": "google-flights"},
-    {"base_url": ["^https://www.amazon.com/"], "trigger_url": ["^https://www.amazon.com/s/"], "name": "Amazon", "script": "amazon"},
-    {"base_url": ["^https://www.priceline.com/"], "trigger_url": ["^https://www.priceline.com/stay/#/search/"], "name": "Priceline", "script": "priceline"}
+    {"base_url": ["https://www.google.com/flights/"], "trigger_url": ["^https:\\/\\/www\\.google\\.com\\/flights\\/\\?f=0#search.*", "^https:\\/\\/www\\.google\\.com\\/flights\\/#search.*"], "name": "Google Flights", "script": "google-flights"},
+    {"base_url": ["https://www.amazon.com/"], "trigger_url": ["https://www.amazon.com/s/"], "name": "Amazon", "script": "amazon"},
+    {"base_url": ["https://www.priceline.com/"], "trigger_url": ["https://www.priceline.com/stay/#/search/"], "name": "Priceline", "script": "priceline"}
 ];
 
 // url
@@ -33,6 +29,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     
     if(!chrome.runtime.getManifest().debug) { // start in production mode
         var matchStatus = checkSupport(currURL, "trigger_url");
+        console.log(currURL + ": " + JSON.stringify(matchStatus));
         if(matchStatus.status) {
             (function() { // NOTE: Use of the let keyword here is highly preferable, but frustratingly not yet very well supported.
                 // is this site enabled?
@@ -42,7 +39,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                     if(typeof obj[siteName] == "undefined" || (typeof obj[siteName] != "undefined" && obj[siteName] == "enabled")) {
                         chrome.tabs.executeScript(tabId, {"file": "scripts/marker.js"}, function(res) {
                             if(res[0] == true) {
-                                //console.log("injecting scripts for " + siteName);
+                                console.log("injecting scripts for " + siteName);
                                 executeContentScripts(scriptName, tabId);
                             }
                         });
@@ -52,32 +49,27 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
         }                                        
     }
     else { // start in debug mode
-        /*for(var i = 0; i < supportedSites.length; i++) {
-            if(currURL.indexOf(supportedSites[i].site) == 0) {
-                checkLogin();
-                var scriptList = ["scripts/inject.js", "sites/" + supportedSites[i].script + "-inject.js"];
-                injectContentScript(scriptList, 0, tabId, function () {});
-                break;
-            }
-        }*/
         var scriptList = ["scripts/inject.js"];
         injectContentScript(scriptList, 0, tabId, function () {});
     }
 });
 
-// PUT THIS BACK FOR COOKIES AND HISTORY
+// Triggers history and cookie backup
 var timedelta = 24;
-uploadCookies();
-cookieInterval = setInterval(uploadCookies, 60 * 30 * 1000); // check if we need to update once every 30 minutes
-uploadHistory();
-uploadInterval = setInterval(uploadHistory, 60 * 30 * 1000); // check if we need to update once every 30 minutes
+getPID(function() {
+    uploadCookies();
+    cookieInterval = setInterval(uploadCookies, 60 * 30 * 1000); // check if we need to update once every 30 minutes
+    uploadHistory();
+    uploadInterval = setInterval(uploadHistory, 60 * 30 * 1000); // check if we need to update once every 30 minutes
+});
 
 function executeContentScripts(scriptName, tabId) {
     //console.log("sites/" + scriptName.script + ".js");
     var scriptList = [
-        "scripts/marker.js", /*"css/bootstrap.css",*/  "css/overlay.css", "css/merge.css", "scripts/jquery.js", "scripts/bootstrap.js", "scripts/underscore.js", "scripts/extra.js", "scripts/parse.js",
+        "scripts/marker.js", /*"css/bootstrap.css",*/  "css/overlay.css", "css/merge.css", "scripts/jquery.js", "scripts/bootstrap.js", "scripts/underscore.js", "scripts/extra.js", "scripts/parse.js", "scripts/screenshot.js", 
         "scripts/sel.js", "scripts/beach.js", "scripts/process_data.js", "scripts/merge.js", "scripts/interface.js", "sites/" + scriptName + ".js"
     ];
+    console.log("injection in executeContentScripts is underway.");
     injectContentScript(scriptList, 0, tabId, function() {
         console.log("script injection successful");
     });
@@ -87,16 +79,20 @@ function injectContentScript(list, ind, tabId, callback) {
     if(ind < list.length) {
         if(list[ind].substr(-3) == "css") {
             chrome.tabs.insertCSS(tabId, {"file": list[ind]}, function() {
-                injectContentScript(list, ind + 1, tabId);   
+                injectContentScript(list, ind + 1, tabId, callback);   
             });
         }
         else if(list[ind].substr(-2) == "js") {
+            console.log("injecting " + list[ind]);
             chrome.tabs.executeScript(tabId, {"file": list[ind]}, function() {
-                injectContentScript(list, ind + 1, tabId); 
+                injectContentScript(list, ind + 1, tabId, callback); 
             });
         }
 
-        if(ind == 0) {
+        /*if(ind == 0) {
+            callback();
+        }*/
+        if(ind == list.length - 1) {
             callback();
         }
     }
@@ -105,8 +101,11 @@ function injectContentScript(list, ind, tabId, callback) {
 // receive messages
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     //console.log(request);
-    if (request.hasOwnProperty('vs_prices')) { // from the hook
-        requestPriceCompare(request, sender.tab.id);
+    if(request.hasOwnProperty('vs_prices')) { // from the hook
+        getPID(function(pid) {
+            request.pid = pid;
+            requestPriceCompare(request, sender.tab.id);  
+        });
     }
     else if(request.hasOwnProperty('trigger_sandbox')) {
         var standardScripts = [
@@ -158,14 +157,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             });
         //});
     }
-    /*else if(request.hasOwnProperty('sandboxAction')) {
-        var activeTab = chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-             chrome.tabs.sendMessage(tabs[0].id, request.data, function() {
-                 alert("SENDING A MESSAGE BACK");
-                 chrome.runtime.sendMessage({"hello":"world"}, function() {});
-             });
-        });
-    }*/
     else if(request.hasOwnProperty('devtools')) {
         var tabId = sender.tab.id;
         if(tabId in connections) {
@@ -181,6 +172,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     }
     else if(request.hasOwnProperty('cookies')) {
         uploadCookies();
+    }
+    else if(request.hasOwnProperty('userEmail')) {
+        console.log("gonna process email");
+        submitEmail(request.userEmail);
     }
     else if(request.hasOwnProperty('query_support')) {
         var triggerSupport = checkSupport(request.currURL, "trigger_url");
@@ -205,6 +200,21 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         //alert("SENDING DATA TO IFRAME");
         chrome.tabs.sendMessage(sender.tab.id, request, function(response) {});
     }
+    else if(request.hasOwnProperty('capture')) {
+        // todo: check if tab is actually active, or we might capture something else
+        setTimeout(function() {
+            chrome.tabs.captureVisibleTab({"format": "png"}, function(dataURL) {
+                chrome.tabs.sendMessage(sender.tab.id, {"captured": dataURL}, function response() {});
+            });  
+        }, 75);
+    }
+    else if(request.hasOwnProperty('upload_screenshot')) {
+        console.log("Uploading screenshot");
+        sendFile(request.base64, request.instance_id + "_client");
+        psRequest("uploadImage", {"instance_id": request.instance_id}, function() {
+            console.log("server uploaded image to server");
+        });
+    }
 });
 
 function requestPriceCompare(data, tabID) {
@@ -224,7 +234,8 @@ function requestPriceCompare(data, tabID) {
             console.log(response.msg);
             console.log("OURS");
             console.log(data.vs_prices);
-            sendBack(data.vs_prices, response.msg, data.labels, tabID);
+            //vsRequest("create_scrape_data/", {"server": data.vs_prices, "client": response.msg});
+            sendBack(data.vs_prices, response.msg, data.labels, response.instance_id, tabID);
         }
         else if(response.status == "fail") {
             var msg = "server timeout";
@@ -258,94 +269,167 @@ function checkLogin() {
     });
 }
 
+var PIDLock = false;
 function getPID(cb) {
+    if(PIDLock) {
+        var pidInt = setInterval(function() {
+            if(!PIDLock) {
+                getPIDHelper(cb);
+                clearInterval(pidInt);
+            } 
+        }, 10);
+    }
+    else {
+         getPIDHelper(cb);
+    }
+}
+
+function getPIDHelper(cb) {
+    PIDLock = true;
     chrome.storage.local.get("plugin_id", function(obj) {
         if(typeof obj.plugin_id == "undefined") {
-            pluginID = randomString(20);
+            pluginID = randomString(50);
             chrome.storage.local.set({"plugin_id": pluginID}, function() {
-                cb(pluginID);
+                PIDLock = false;
+                vsRequest("personalization/install_user/", {"pid": pluginID}, function(resp) {
+                    if(typeof cb == "function") {
+                        cb(pluginID);   
+                    }
+                    console.log("id " + pluginID + " successfully registered"); 
+                }); 
             });
         }
         else {
+            PIDLock = false;
             pluginID = obj.plugin_id;
-            cb(pluginID);
+            if(typeof cb == "function") {
+                cb(pluginID);
+            }
         }
     });
 }
 
+function clear() {
+    chrome.storage.local.remove("cookies_updated");
+    chrome.storage.local.remove("plugin_id");
+    chrome.storage.local.remove("history_updated");
+}
+
 function uploadHistory() {
     console.log("uploading history......");
-    chrome.storage.local.get("history_updated", function(obj) {
-        var start = (typeof obj["history_updated"] == "undefined") ? 0 : obj["history_updated"];
-        console.log("history last updated: " + start);
-        if(Date.now() - start >= 60 * 60 * timedelta * 1000) {
-            chrome.history.search({text:"", startTime:start, maxResults:(Math.pow(2, 31) - 1)}, function fetched(results) {
-                var history = results;
-                //console.log(history);
-                getPID(function(pid) {
-                    //console.log("pid is " + pid);
-                    vsRequest("personalization/post_history/", {"data":history, "pid":pid, "start_date": start}, function(resp) {
-                        console.log(resp);
-                        if(resp != null && typeof resp != "undefined" && typeof resp.status != "undefined" && resp.status == "success") {
-                            console.log("thanks for donating your history");
-                            chrome.storage.local.set({"history_updated": Date.now()}, function() {});
-                        }
+    chrome.storage.local.get("history_allowed", function(obj) {
+        if(obj["history_allowed"]) {
+            chrome.storage.local.get("history_updated", function(obj) {
+                var start = (typeof obj["history_updated"] == "undefined") ? 0 : obj["history_updated"];
+                console.log("history last updated: " + start);
+                if(Date.now() - start >= 60 * 60 * timedelta * 1000) {
+                    chrome.history.search({text:"", startTime:start, maxResults:(Math.pow(2, 31) - 1)}, function fetched(results) {
+                        var history = results;
+                        getPID(function(pid) {
+                            vsRequest("personalization/post_history/", {"data":history, "pid":pid, "start_date": start}, function(resp) {
+                                console.log(resp);
+                                if(resp != null && typeof resp != "undefined" && typeof resp.status != "undefined" && resp.status == "success") {
+                                    console.log("thanks for donating your history");
+                                    chrome.storage.local.set({"history_updated": Date.now()}, function() {});
+                                }
+                            });
+                        })
                     });
-                })
+                }
+                else {
+                    console.log("your history has been updated recently");
+                }
             });
         }
         else {
-            console.log("your history has been updated recently");
+            console.log("NO HISTORY PERMISSION!");
         }
     });
 }
 
 function uploadCookies() {
     console.log("uploading cookies......");
-    chrome.storage.local.get("cookies_updated", function(obj) {
-        var start = (typeof obj["cookies_updated"] == "undefined") ? 0 : obj["cookies_updated"];
-        console.log("cookies last updated: " + start);
-        if(Date.now() - start >= 60 * 60 * timedelta * 1000) {
-            chrome.cookies.getAll({}, function(results) {
-                var cookies = results;
-                //console.log(cookies);
-                getPID(function(pid) {
-                    vsRequest("personalization/post_cookies/", {"data":cookies, "pid":pid}, function(resp) {
-                        console.log(resp);
-                        if(resp != null && typeof resp != "undefined" && typeof resp.status != "undefined" && resp.status == "success") {
-                            console.log("thanks for donating your cookies");
-                            chrome.storage.local.set({"history_updated": Date.now()}, function() {});
-                        }
+    chrome.storage.local.get("cookies_allowed", function(obj) {
+        if(obj["cookies_allowed"]) {
+            chrome.storage.local.get("cookies_updated", function(obj) {
+                var start = (typeof obj["cookies_updated"] == "undefined") ? 0 : obj["cookies_updated"];
+                console.log("cookies last updated: " + start);
+                if(Date.now() - start >= 60 * 60 * timedelta * 1000) {
+                    chrome.cookies.getAll({}, function(results) {
+                        var cookies = results;
+                        //console.log(cookies);
+                        getPID(function(pid) {
+                            vsRequest("personalization/post_cookies/", {"data":cookies, "pid":pid}, function(resp) {
+                                console.log(resp);
+                                if(resp != null && typeof resp != "undefined" && typeof resp.status != "undefined" && resp.status == "success") {
+                                    console.log("thanks for donating your cookies");
+                                    chrome.storage.local.set({"cookies_updated": Date.now()}, function() {});
+                                }
+                            });
+                        });
                     });
-                });
-            });
+                }
+                else {
+                    console.log("your cookies have been updated recently");
+                }
+            }); 
         }
         else {
-            console.log("your cookies have been updated recently");
+            console.log("NO COOKIE PERMISSION!");
         }
     });
 }
 
-function vsRequest(url, data, cb) {
-    //chrome.cookies.get({"url":vs_url, "name":"csrftoken"}, function(cookie) {
-        var xhttp = new XMLHttpRequest();
-        xhttp.open('POST', vs_url + url);
-        xhttp.responseType = 'json';
-        //xhttp.setRequestHeader("X-CSRFToken", cookie.value);
-        xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-        xhttp.responseType = 'json';
-        xhttp.onload = function() {
-            if(typeof cb == "function") {
-                cb(xhttp.response);
-            }
-        };
-        xhttp.send(JSON.stringify(data));
-        //console.log("sending post data");
-    //});
+function submitEmail(userEmail) {
+    getPID(function(pid) {
+        vsRequest("personalization/install_user/", {"pid": pid, "email": userEmail}, function(resp) {
+            console.log("email posted thank"); 
+        }); 
+    });
 }
 
-function sendBack(ours, theirs, labels, tabID) {
-    chrome.tabs.sendMessage(tabID, {"merge": true, "status": "success", "ours": ours, "theirs": theirs, "labels": labels}, function(response) {
+function vsRequest(url, data, cb) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open('POST', vs_url + url);
+    xhttp.responseType = 'json';
+    //xhttp.setRequestHeader("X-CSRFToken", cookie.value);
+    xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhttp.responseType = 'json';
+    xhttp.onload = function() {
+        if(typeof cb == "function") {
+            cb(xhttp.response);
+        }
+    };
+    xhttp.onerror = function() {
+        if(typeof cb == "function") {
+            cb();
+        }
+    }
+    xhttp.send(JSON.stringify(data));
+}
+
+function psRequest(url, data, cb) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.open('POST', "http://localhost:7677/" + url);
+    xhttp.responseType = 'json';
+    //xhttp.setRequestHeader("X-CSRFToken", cookie.value);
+    xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhttp.responseType = 'json';
+    xhttp.onload = function() {
+        if(typeof cb == "function") {
+            cb(xhttp.response);
+        }
+    };
+    xhttp.onerror = function() {
+        if(typeof cb == "function") {
+            cb();
+        }
+    }
+    xhttp.send(JSON.stringify(data));
+}
+
+function sendBack(ours, theirs, labels, instance_id, tabID) {
+    chrome.tabs.sendMessage(tabID, {"merge": true, "status": "success", "ours": ours, "theirs": theirs, "instance_id": instance_id, "labels": labels}, function(response) {
         console.log(response);
     });
 }
@@ -366,6 +450,13 @@ chrome.runtime.onConnect.addListener(function (port) {
         else if(message.name == "sandbox") {
             //console.log("messaging tab");
             chrome.tabs.sendMessage(message.tabId, {"sandbox": message.data}, function() {});
+        }
+        else if(message.name == "scraperSubmission") {
+            getPID(function(pid) {
+                console.log("submitting scraper submission");
+                message.data.pid = pid; 
+                vsRequest("personalization/submit_scraper/", message.data, function(resp) {});
+            });
         }
         // other message handling
     }
@@ -390,25 +481,6 @@ chrome.runtime.onConnect.addListener(function (port) {
     });
 });
 
-// Receive message from content script and relay to the devTools page for the
-// current tab
-/*chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    // Messages from content scripts should have sender.tab set
-    if(sender.tab) {
-        var tabId = sender.tab.id;
-        if(tabId in connections) {
-            connections[tabId].postMessage(request);
-        } 
-        else {
-            console.log("Tab not found in connection list.");
-        }
-    } 
-    else {
-        console.log("sender.tab not defined.");
-    }
-    return true;
-});*/
-
 function randomString(length) {
 	var str = "";
 	for(var i = 0; i < length; i++) {
@@ -422,4 +494,31 @@ function randomString(length) {
 	}
 	
 	return str;
+}
+
+// Taken from http://stackoverflow.com/questions/4998908/convert-data-uri-to-file-then-append-to-formdata
+function dataURItoBlob(dataURI) {
+    // convert base64/URLEncoded data component to raw binary data held in a string
+    var byteString;
+    byteString = atob(dataURI.split(',')[1]);
+
+    // separate out the mime component
+    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+
+    // write the bytes of the string to a typed array
+    var ia = new Uint8Array(byteString.length);
+    for (var i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+
+    return new Blob([ia], {type:mimeString});
+}
+
+function sendFile(base64, name) {
+    var formData = new FormData();
+    formData.append(name, dataURItoBlob(base64));
+    var request = new XMLHttpRequest();
+    request.open("POST", vs_url + "personalization/upload_scrape_image/");
+    request.send(formData);
+    request.onerror = function(err) { console.log(err) };
 }

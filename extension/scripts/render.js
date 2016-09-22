@@ -22,15 +22,18 @@ function drawJSON(theJSON, holder) {
     jsonArr = theJSON;
     var idPrefix = randomString(20) + "_arryID_";
     
-    for(let i = 0; i < jsonArr.length; i++) {
-        let container = generateContainer("array", "flex-vertical");
-        container.find(".hide").removeClass("hide").addClass("addElement").html('<i class="material-icons">add</i>');
-        container.attr("id", idPrefix + i);
-        
-        bindArrayEvents(container, idPrefix);
-        
-        holder.append(container);
-        resolveType(jsonArr[i], container.find(".content")).draw();
+    for(var i = 0; i < jsonArr.length; i++) {
+        (function() {
+            var container = generateContainer("array", "flex-vertical");
+            var index = i;
+            container.find(".hide").removeClass("hide").addClass("addElement").html('<i class="material-icons">add</i>');
+            container.attr("id", idPrefix + index);
+
+            bindArrayEvents(container, idPrefix);
+
+            holder.append(container);
+            resolveType(jsonArr[index], container.find(".content")).draw();  
+        })();
     }
 }
 
@@ -65,7 +68,7 @@ function bindArrayEvents(container, idPrefix) {
             toChange[x].attr("id", idPrefix + (oldIndex + 1));
         }
         
-        let newContainer = generateContainer("array", "flex-vertical");
+        var newContainer = generateContainer("array", "flex-vertical");
         newContainer.find(".hide").removeClass("hide").addClass("addElement").html('<i class="material-icons">add</i>');
         newContainer.attr("id", idPrefix + index);
         var sibling = $("#" + idPrefix + (index - 1));
@@ -195,7 +198,7 @@ function Ref(obj, ctx, container) {
 }
 
 Ref.prototype.draw = function() {
-    let _this = this;
+    var _this = this;
     this.container.find(".destroy").click(function() {
         _this.destroy(); 
     });
@@ -251,7 +254,7 @@ function Desc(obj, ctx, container) {
 }
 
 Desc.prototype.draw = function() {
-    let _this = this;
+    /*let*/var _this = this;
     this.container.find(".destroy").click(function() {
         _this.destroy(); 
     });
@@ -259,18 +262,18 @@ Desc.prototype.draw = function() {
     var ctx = this.container.find(".content");
     
     var descInfo = $("<div class='descInfo arrow'></div>");
-    let addName = $("<div class='.addName'>+NAME</div>");
-    let addDeep = $("<div class='.addDeep'>+DEEP</div>");
-    let addCtxt = $("<div class='.addCtxt'>+CTXT</div>");
-    let addVSID = $("<div class='.addCtxt'>+VSID</div>");
-    let addGrab = $("<div class='.addGrab'>+GRAB</div>");
+    /*let*/var addName = $("<div class='.addName'>+NAME</div>");
+    /*let*/var addDeep = $("<div class='.addDeep'>+DEEP</div>");
+    /*let*/var addCtxt = $("<div class='.addCtxt'>+CTXT</div>");
+    /*let*/var addVSID = $("<div class='.addCtxt'>+VSID</div>");
+    /*let*/var addGrab = $("<div class='.addGrab'>+GRAB</div>");
     var options = this.obj.desc[1];
     
-    let nameHolder = $("<div class='nameHolder margin'><div class='nameInput'></div><div class='nametag'></div></div>");
-    let deepHolder = $("<div class='deepHolder margin'></div>");
-    let ctxtHolder = $("<div class='ctxtHolder margin'><div class='ctxtCascade'></div><div class='ctxtAct'></div></div>");
-    let vsidHolder = $("<div class='vsidHolder margin'></div>");
-    let grabHolder = $("<div class='grabHolder margin'></div>");
+    /*let*/var nameHolder = $("<div class='nameHolder margin'><div class='nameInput'></div><div class='nametag'></div></div>");
+    /*let*/var deepHolder = $("<div class='deepHolder margin'></div>");
+    /*let*/var ctxtHolder = $("<div class='ctxtHolder margin'><div class='ctxtCascade'></div><div class='ctxtAct'></div></div>");
+    /*let*/var vsidHolder = $("<div class='vsidHolder margin'></div>");
+    /*let*/var grabHolder = $("<div class='grabHolder margin'></div>");
     
     addName.click(function() {
         if($(this).text() == "+NAME") {
@@ -643,7 +646,7 @@ var gChain;
 Chain.prototype.addLink = function(sibID) {
     var linkIndex = parseInt(sibID.substr(28)) + 1;
     
-    let newLink = this.blankLink(this.id + "_linkID_" + linkIndex);
+    /*let*/var newLink = this.blankLink(this.id + "_linkID_" + linkIndex);
     
     // update ids CORRECTLY
     var toChange = [];
@@ -758,7 +761,7 @@ Chain.prototype.draw = function () {
     //let container = generateContainer("chain", "flex-horizontal");    
     var content = this.container.find(".content");
     //this.ctx.append(this.container);
-    let _this = this;
+    var _this = this;
     
     this.container.find(".destroy").click(function() {
         _this.destroy(); 
@@ -769,18 +772,21 @@ Chain.prototype.draw = function () {
         this.drawEmpty();
     }
     else {
-        for(let i = 0; i < this.chain.length; i++) {
-            let link = this.blankLink(this.id + "_linkID_" + i);
-            //link.attr("id", this.id + "_linkID_" + i);
-            this.addLinkListeners(link);
-            link.appendTo(content);
+        for(var i = 0; i < this.chain.length; i++) {
+            (function() {
+                var index = i;
+                var link = _this.blankLink(_this.id + "_linkID_" + index);
+                //link.attr("id", this.id + "_linkID_" + i);
+                _this.addLinkListeners(link);
+                link.appendTo(content);
 
-            var title = link.find(".linkHeaderTitle");
+                var title = link.find(".linkHeaderTitle");
 
-            var name = Object.keys(this.chain[i])[0];
-            var dashInd = name.indexOf("-");
-            name = name.substr(0, dashInd);
-            this.specialize(name, link, true);
+                var name = Object.keys(_this.chain[index])[0];
+                var dashInd = name.indexOf("-");
+                name = name.substr(0, dashInd);
+                _this.specialize(name, link, true);
+            })();
         }
     }
 }
@@ -790,7 +796,7 @@ Chain.prototype.drawEmpty = function() {
     var addButton = $("<div class='addChain'><i class='material-icons'>add_circle_outline</i></div>");
     addButton.click(function() {
         _this.container.find(addButton).remove();
-        let newLink = _this.blankLink(_this.id + "_linkID_" + 0);
+        var newLink = _this.blankLink(_this.id + "_linkID_" + 0);
         //newLink.attr("id", _this.id + "_linkID_" + 0);
         _this.addLinkListeners(newLink);
         _this.container.find(".content").append(newLink);
@@ -849,9 +855,10 @@ Chain.prototype.specialize = function(type, link, hasContent) {
         link.find(".linkHeader").find("select").val(type);
     }
     
-    var relatives = new Set(["parent", "child", "sibling", "distance"]);
+    //var relatives = new Set(["parent", "child", "sibling", "distance"]);
+    var relatives = ["parent", "child", "sibling", "distance"];
     
-    let _this = this;
+    /*let*/var _this = this;
     if(type == "id") {
         var equality = $("<input type='text' style='width:15%; margin:2px' />");
         equality.addClass("idOpVal");
@@ -1012,7 +1019,7 @@ Chain.prototype.specialize = function(type, link, hasContent) {
             }
         }
     }
-    else if(relatives.has(type)) {
+    else if(relatives.indexOf(type) >= 0) {
         if(hasContent) {
             var name = Object.keys(this.chain[linkIndex])[0];
             var val = this.chain[linkIndex][name];
