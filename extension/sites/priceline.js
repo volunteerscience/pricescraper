@@ -1,13 +1,30 @@
 var vsScraperVersion = "001";
 
 if(typeof window.vs_scraper == "undefined") {
-    window.vs_scraper = true;
+    var url = window.location.href;
+    /*console.log("url is " + url);
+    if(url.indexOf("page=1") >= 0) {
+        window.vs_scraper = true;
+        vs_init();
+    }
+    else {
+        console.log("only the first page of results is supported on Priceline.");
+    }*/
     vs_init();
 }
 
 function vs_init() {
     waitFor([{"class-":"=next"}, {"tag-":"=BUTTON"}], 1000, function() {
-        vs_init_ui();
+         var url = window.location.href;
+        console.log("url is " + url);
+        if(url.indexOf("page=1") >= 0) {
+            window.vs_scraper = true;
+            vs_init_ui();
+        }
+        else {
+            console.log("only the first page of results is supported on Priceline.");
+        }
+        //vs_init_ui();
     });
 }
 

@@ -497,8 +497,82 @@ function euclidDist(x1, y1, x2, y2) {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 }
 
+//// is elemA DIR elemB
+//function isDirection(dir, elemA, elemB) {
+//    var posElemA = $(elemA).offset();
+//    var posElemB = $(elemB).offset();
+//    posElemA["bottom"] = posElemA.top + $(elemA).height();
+//    posElemA["right"] = posElemA.left + $(elemA).width();
+//    posElemB["bottom"] = posElemB.top + $(elemB).height();
+//    posElemB["right"] = posElemB.left + $(elemB).width();
+//     
+//    var left = false;
+//    var right = false;
+//    var above = false;
+//    var below = false;
+//    
+//    var directions = {"left": false, "right": false, "above": false, "below": false};
+//    var distances = {"left": 0, "right": 0, "above": 0, "below": 0};
+//    var delta = 0.1;
+//    
+//    /*if(posElemA.right - posElemB.left < delta) {
+//        console.log("IT'S LEFT");
+//        directions["left"] = true;
+//        distances["left"] = Math.abs(posElemA.right - posElemB.left);
+//    }
+//    else if(posElemA.left - posElemB.right > delta) {
+//        console.log("IT'S RIGHT");
+//        directions["right"] = true;
+//        distances["right"] = Math.abs(posElemA.left - posElemB.right);
+//    }
+//    if((posElemA.bottom - posElemB.top).toFixed(2) < delta) {
+//        directions["above"] = true;
+//        distances["above"] = Math.abs(posElemA.bottom - posElemB.top);
+//        console.log($(elemA).text() + " IS ABOVE " + $(elemB).text().replace(/\s/g,'') + " by " + distances["above"]);
+//    }
+//    else if((posElemA.top - posElemB.bottom).toFixed(2) > delta) {
+//        directions["below"] = true;
+//        distances["below"] = Math.abs(posElemA.top - posElemB.bottom);
+//        console.log($(elemA).text() + " IS BELOW " + $(elemB).text().replace(/\s/g,'') + " by " + distances["below"]);
+//    }
+//    else {
+//        console.log((posElemA.bottom - posElemB.top).toFixed(2) + " is the fixed width above approximation");
+//        console.log($(elemA).text() + " IS IN A NEBULOUS STATE COMPARED WITH " + $(elemB).text().replace(/\s/g,''));
+//    }*/
+//    if(posElemA.right <= posElemB.left) {
+//        console.log("IT'S LEFT");
+//        directions["left"] = true;
+//        distances["left"] = Math.abs(posElemA.right - posElemB.left);
+//    }
+//    if(posElemA.left >= posElemB.right) {
+//        console.log("IT'S RIGHT");
+//        directions["right"] = true;
+//        distances["right"] = Math.abs(posElemA.left - posElemB.right);
+//    }
+//    if(posElemA.bottom <= posElemB.top) {
+//        directions["above"] = true;
+//        distances["above"] = Math.abs(posElemA.bottom - posElemB.top);
+//        console.log($(elemA).text() + " IS ABOVE " + $(elemB).text().replace(/\s/g,'') + " by " + distances["above"]);
+//    }
+//    if(posElemA.top >= posElemB.bottom) {
+//        directions["below"] = true;
+//        distances["below"] = Math.abs(posElemA.top - posElemB.bottom);
+//        console.log($(elemA).text() + " IS BELOW " + $(elemB).text().replace(/\s/g,'') + " by " + distances["below"]);
+//    }
+//    console.log("A: [" + posElemA.top + ", " + posElemA.bottom + "]" + " -- " + "B: [" + posElemB.top + ", " + posElemB.bottom + "]");
+//    
+//    return [directions[dir], distances[dir]];
+//}
 // is elemA DIR elemB
-function isDirection(dir, elemA, elemB) {
+/*
+MODES:
+--Adjacent: tops get matched with bottoms and vice versa (if the bottom of a is above the top of b, then it's above)
+--Middles: middles get matched with middles (if the middle of a is above the middle of b, then it's above)
+*/
+function isDirection(dir, elemA, elemB, mode) {
+    if(typeof(mode) == "undefined") {
+        mode = "adjacent";
+    }
     var posElemA = $(elemA).offset();
     var posElemB = $(elemB).offset();
     posElemA["bottom"] = posElemA.top + $(elemA).height();
@@ -514,21 +588,52 @@ function isDirection(dir, elemA, elemB) {
     var directions = {"left": false, "right": false, "above": false, "below": false};
     var distances = {"left": 0, "right": 0, "above": 0, "below": 0};
     
-    if(posElemA.right <= posElemB.left) {
-        directions["left"] = true;
-        distances["left"] = Math.abs(posElemA.right - posElemB.left);
+    if(mode == "adjacent") {
+        if(posElemA.left <= posElemB.left) {
+            console.log("IT'S LEFT");
+            directions["left"] = true;
+            distances["left"] = Math.abs(posElemA.right - posElemB.left);
+        }
+        if(posElemA.right >= posElemB.right) {
+            console.log("IT'S RIGHT");
+            directions["right"] = true;
+            distances["right"] = Math.abs(posElemA.left - posElemB.right);
+        }
+        if(posElemA.bottom <= posElemB.top) {
+            directions["above"] = true;
+            distances["above"] = Math.abs(posElemA.bottom - posElemB.top);
+            console.log($(elemA).text() + " IS ABOVE " + $(elemB).text().replace(/\s/g, '') + " by " + distances["above"]);
+        }
+        if(posElemA.top >= posElemB.bottom) {
+            directions["below"] = true;
+            distances["below"] = Math.abs(posElemA.top - posElemB.bottom);
+            console.log($(elemA).text() + " IS BELOW " + $(elemB).text().replace(/\s/g, '') + " by " + distances["below"]);
+        }
     }
-    if(posElemA.left >= posElemB.right) {
-        directions["right"] = true;
-        distances["right"] = Math.abs(posElemA.left - posElemB.right);
+    else if(mode == "middles") {
+        var elemAX = (posElemA["left"] + posElemA["right"]) / 2;
+        var elemAY = (posElemA["bottom"] + posElemA["top"]) / 2;
+        var elemBX = (posElemB["left"] + posElemB["right"]) / 2;
+        var elemBY = (posElemB["bottom"] + posElemB["top"]) / 2;
+        if(elemAX <= elemBX) {
+            directions["left"] = true;
+            distances["left"] = Math.abs(elemAX - elemBX);
+        }
+        if(elemAX >= elemBX) {
+            directions["right"] = true;
+            distances["right"] = Math.abs(elemAX - elemBX);
+        }
+        if(elemAY <= elemBY) {
+            directions["above"] = true;
+            distances["above"] = Math.abs(elemAY - elemBY);
+        }
+        if(elemAY >= elemBY) {
+            directions["below"] = true;
+            distances["below"] = Math.abs(elemAY - elemBY);
+        }
     }
-    if(posElemA.bottom <= posElemB.top) {
-        directions["above"] = true;
-        distances["above"] = Math.abs(posElemA.bottom - posElemB.top);
-    }
-    if(posElemA.top >= posElemB.bottom) {
-        directions["below"] = true;
-        distances["below"] = Math.abs(posElemA.top - posElemB.bottom);
+    else {
+        console.error("Warning: Invalid mode " + mode);
     }
     
     return [directions[dir], distances[dir]];

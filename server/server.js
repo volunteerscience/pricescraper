@@ -124,6 +124,7 @@ function loadPage(result, req, scraperScript/*url, scraperScript, clientData*/) 
     var page = new Horseman({'timeout':30000});
     
     page
+        .userAgent("Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36")
         .on("timeout", function(msg) {
             console.log("timeout");
             result.send(JSON.stringify({"status": "fail", "msg": "Server timed out :("}));   
@@ -176,6 +177,7 @@ function loadPage(result, req, scraperScript/*url, scraperScript, clientData*/) 
         .then(function(msg) {
             //console.log("LENGTH: " + msg);
             console.log("parsing complete");
+            //console.log(msg);
             var instance_id = randomString(50);
 
             result.send(JSON.stringify({"status": "success", "msg": msg, "instance_id": instance_id}));
@@ -198,8 +200,8 @@ function loadPage(result, req, scraperScript/*url, scraperScript, clientData*/) 
         });
 }
 
-//var vs_url = "http://localhost:8000/";
-var vs_url = "https://volunteerscience.com/";
+var vs_url = "http://localhost:8000/";
+//var vs_url = "https://volunteerscience.com/";
 function vsRequest(url, data, cb) {
     var xhttp = new XMLHttpRequest();
     xhttp.open('POST', vs_url + url);

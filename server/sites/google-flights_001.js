@@ -15,7 +15,7 @@ function vs_init() {
 }
 
 function vs_continue() {
-    var flightNumButton = findElement([{"contents-100":"[+lt]longer"}, {"contents-100":"[+lt]expensive"}]);
+    /*var flightNumButton = findElement([{"contents-100":"[+lt]longer"}, {"contents-100":"[+lt]expensive"}]);
     if($(flightNumButton).text().toLowerCase().indexOf("show") >= 0) {
         //console.log("We need to expand the flights");
         var lessFlights = [{"contents-100":"[+lt]hide"}, {"contents-100":"[+lt]longer"}, {"contents-100":"[+lt]expensive"}];
@@ -26,7 +26,8 @@ function vs_continue() {
     }
     else {
         execScrape();
-    }
+    }*/
+    execScrape();
 }
 
 function execScrape() {
@@ -35,5 +36,6 @@ function execScrape() {
     
     processJSON(jsonBlock);
     
-    vs_scraper_done(labels, ["eo"]);
+    //vs_scraper_done(labels, ["eo"]);
+    vs_scraper_done(labels);
 }

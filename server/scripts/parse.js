@@ -3,7 +3,15 @@ var collectiveArr = [];
 var collective = {};
 var labels = {"mandatory-labels":[], "data-labels": []};
 
+function resetGlobals() {
+    sets = {};
+    collectiveArr = [];
+    collective = {};
+    labels = {"mandatory-labels":[], "data-labels": []};
+}
+
 function processJSON(jsonArr) {
+    resetGlobals();
     var resolveRes = [];
     for(var i = 0; i < jsonArr.length; i++) {
         //console.log("evaulating " + JSON.stringify(jsonArr[i]));
@@ -11,9 +19,15 @@ function processJSON(jsonArr) {
     }
     
     //console.log("COLLECTIVE IS: ");
-    //console.log(JSON.stringify(collective));
-    //console.log(JSON.stringify(Object.keys(collective)));
-    //return;
+    //console.log(JSON.parse(JSON.stringify(collective)));
+    
+    
+    
+    // FOR TESTING ONLY
+    /*collectiveArr = collective;
+    return;*/
+    // TAKE THIS OUT WHEN DONE TESTING
+    
     var refinedCollective = refineCollective();
     
     var keys = Object.keys(refinedCollective);
@@ -38,7 +52,6 @@ function processJSON(jsonArr) {
         collectiveArr.push(copy);
         collectiveArr[i]["vsid"] = keys[i];
     }
-    //console.log("survived post loop");
     
     collectiveArr = collectiveArr.sort(function(a, b) {
         return a.index - b.index;
@@ -281,7 +294,7 @@ function resolve(obj, params) {
     //console.log("Resolving " + JSON.stringify(obj));
     //console.log(obj);
     if(typeof obj == "undefined") {
-        console.log("Type of obj is undefined");
+        //console.log("Type of obj is undefined");
         return obj;
     }
     
@@ -315,16 +328,16 @@ function resolve(obj, params) {
 }
 
 function randomString(length) {
-	var str = "";
-	for(var i = 0; i < length; i++) {
-		var charCode = 0;
-		if(Math.random() < (26 / 36))
-			charCode = Math.floor(Math.random() * 26) + 97;
-		else
-			charCode = Math.floor(Math.random() * 10) + 48;
-			
-		str += String.fromCharCode(charCode);
-	}
-	
-	return str;
+    var str = "";
+    for(var i = 0; i < length; i++) {
+        var charCode = 0;
+        if(Math.random() < (26 / 36))
+            charCode = Math.floor(Math.random() * 26) + 97;
+        else
+            charCode = Math.floor(Math.random() * 10) + 48;
+
+        str += String.fromCharCode(charCode);
+    }
+
+    return str;
 }

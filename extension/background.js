@@ -1,11 +1,11 @@
-//var reportURL = "https://price.volunteerscience.com/reportPrice/";
-var vs_url = "https://volunteerscience.com/";
-var reportURL = "http://localhost:7677/reportPrice/";
-//var vs_url = "http://localhost:8000/";
+//var reportURL = "https://price.volunteerscience.com/";
+//var vs_url = "https://volunteerscience.com/";
+var reportURL = "http://localhost:7677/";
+var vs_url = "http://localhost:8000/";
 
 var supportedSites = [
     {"base_url": ["https://www.google.com/flights/"], "trigger_url": ["^https:\\/\\/www\\.google\\.com\\/flights\\/\\?f=0#search.*", "^https:\\/\\/www\\.google\\.com\\/flights\\/#search.*"], "name": "Google Flights", "script": "google-flights"},
-    {"base_url": ["https://www.amazon.com/"], "trigger_url": ["https://www.amazon.com/s/"], "name": "Amazon", "script": "amazon"},
+    {"base_url": ["https://www.amazon.com/"], "trigger_url": ["https://www.amazon.com/s/"], "name": "Amazon", "script": "amazon", "wait": 3000},
     {"base_url": ["https://www.priceline.com/"], "trigger_url": ["https://www.priceline.com/stay/#/search/"], "name": "Priceline", "script": "priceline"}
 ];
 
@@ -16,7 +16,7 @@ function checkSupport(url, type) {
         for(var j = 0; j < supportedSites[i][type].length; j++) {
             var patt = new RegExp(supportedSites[i][type][j]);
             if(patt.test(url)) {
-                return {"status": true, "name": supportedSites[i].name, "script": supportedSites[i].script};
+                return {"status": true, "name": supportedSites[i].name, "script": supportedSites[i].script, "wait": supportedSites[i].wait};
             }
         }
     }
@@ -26,31 +26,53 @@ function checkSupport(url, type) {
 
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     var currURL = tab.url;
+    //console.log("TAB UPDATED!!!!");
     
-    if(!chrome.runtime.getManifest().debug) { // start in production mode
-        var matchStatus = checkSupport(currURL, "trigger_url");
-        console.log(currURL + ": " + JSON.stringify(matchStatus));
-        if(matchStatus.status) {
-            (function() { // NOTE: Use of the let keyword here is highly preferable, but frustratingly not yet very well supported.
-                // is this site enabled?
-                var scriptName = matchStatus.script; // this fires after the loop has terminated (should be let)
-                var siteName = matchStatus.name; // should be let
-                chrome.storage.local.get(siteName, function(obj) {
-                    if(typeof obj[siteName] == "undefined" || (typeof obj[siteName] != "undefined" && obj[siteName] == "enabled")) {
-                        chrome.tabs.executeScript(tabId, {"file": "scripts/marker.js"}, function(res) {
-                            if(res[0] == true) {
-                                console.log("injecting scripts for " + siteName);
-                                executeContentScripts(scriptName, tabId);
-                            }
-                        });
-                    }
-                });
-            })();
-        }                                        
-    }
-    else { // start in debug mode
-        var scriptList = ["scripts/inject.js"];
-        injectContentScript(scriptList, 0, tabId, function () {});
+    /*if(changeInfo && changeInfo.status && tab && tab.status == 'complete') {
+        console.log("WELL LOOKEE HERE WE ARE LOADED");
+    }*/
+    
+    if(changeInfo && changeInfo.status && tab && tab.status == 'complete') {
+        if(!chrome.runtime.getManifest().debug) { // start in production mode
+            var matchStatus = checkSupport(currURL, "trigger_url");
+            //console.log(currURL + ": " + JSON.stringify(matchStatus));
+            if(matchStatus.status) {
+                (function() { // NOTE: Use of the let keyword here is highly preferable, but frustratingly not yet very well supported.
+                    // is this site enabled?
+                    var scriptName = matchStatus.script; // this fires after the loop has terminated (should be let)
+                    var siteName = matchStatus.name; // should be let
+                    chrome.storage.local.get(siteName, function(obj) {
+                        if(typeof obj[siteName] == "undefined" || (typeof obj[siteName] != "undefined" && obj[siteName] == "enabled")) {
+                            chrome.tabs.executeScript(tabId, {"file": "scripts/marker.js"}, function(res) {
+                                //console.log("RES IS " + JSON.stringify(res));
+                                if(res[0] == true) {
+                                    console.log("injecting scripts for " + siteName);
+                                    executeContentScripts(scriptName, tabId);
+                                }
+                                else {
+                                    //console.log("alright");
+                                    var wait = 0;
+                                    console.log("match status is " + matchStatus);
+                                    if(matchStatus.wait) {
+                                        wait = matchStatus.wait;
+                                    }
+                                    //console.log("WAIT IS " + wait);
+                                    setTimeout(function() {
+                                        chrome.tabs.executeScript(tabId, {"code": "vs_init();"});  
+                                    }, wait);
+                                    //console.log("oy vey.... our own mechanism, hurting us.");
+                                    
+                                }
+                            });
+                        }
+                    });
+                })();
+            }                                        
+        }
+        else { // start in debug mode
+            var scriptList = ["scripts/inject.js"];
+            injectContentScript(scriptList, 0, tabId, function () {});
+        }
     }
 });
 
@@ -75,7 +97,7 @@ function executeContentScripts(scriptName, tabId) {
     });
 }
 
-function injectContentScript(list, ind, tabId, callback) { 
+function injectContentScript(list, ind, tabId, callback) {
     if(ind < list.length) {
         if(list[ind].substr(-3) == "css") {
             chrome.tabs.insertCSS(tabId, {"file": list[ind]}, function() {
@@ -219,7 +241,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 function requestPriceCompare(data, tabID) {
     var xhttp = new XMLHttpRequest();
-    xhttp.open('POST', reportURL);
+    xhttp.open('POST', reportURL + "reportPrice/");
     xhttp.responseType = 'json';
     xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhttp.onload = function() {
@@ -410,7 +432,7 @@ function vsRequest(url, data, cb) {
 
 function psRequest(url, data, cb) {
     var xhttp = new XMLHttpRequest();
-    xhttp.open('POST', "http://localhost:7677/" + url);
+    xhttp.open('POST', reportURL + url);
     xhttp.responseType = 'json';
     //xhttp.setRequestHeader("X-CSRFToken", cookie.value);
     xhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
