@@ -24,14 +24,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 });
 
 function vs_init_ui() {
-    if(!vsSearchStarted) {
+    startParse();
+    /*if(!vsSearchStarted) {
         var iframeSrc = chrome.extension.getURL('html/known_site.html');
         var iframe = $("<iframe style='border:0 none; z-index: 10000000000; position:fixed; width: 100%; height: 100%;' src='" + iframeSrc + "' id='vs_overlay_frame'></iframe>");
         iframe.prependTo('body');
         iframe.load(function() {
             messageIframe({"launch_main_modal": true});
         });
-    }
+    }*/
 }
 
 function messageIframe(data) {
@@ -40,8 +41,8 @@ function messageIframe(data) {
 
 function startParse() {
     if(!vsSearchStarted) {
-        $("#scrape_status").text("scraping");
-        centerOverlayBody();
+        //$("#scrape_status").text("scraping");
+        //centerOverlayBody();
         var vsidElems = document.getElementsByClassName("vsid");
         if(vsidElems == null || vsidElems.length == 0) {
             vsSearchStarted = true;
@@ -49,32 +50,35 @@ function startParse() {
         }
         else {
             $("#scrape_status").text("Hmm... looks like you scraped this page already...");
-            centerOverlayBody();
+            //centerOverlayBody();
             setTimeout(disableInterface, 2000);
         }
     }
     else {
         $("#scrape_status").text("Sorry.  Looks like a session is already underway...");
-        centerOverlayBody();
+        //centerOverlayBody();
         setTimeout(disableInterface, 2000);
     }
 }
 
 function vs_init_ui_no_modal() {
-    if(surveyTimeout != null) {
+    /*if(surveyTimeout != null) {
         //console.log("CLEARING INTERVAL");
         clearTimeout(surveyTimeout);
-    }
-    loadScrapeUI();
+    }*/
+    //loadScrapeUI();
     startParse();
 }
 
 function loadScrapeUI() {
     var spinnerSrc = chrome.extension.getURL("images/icon128.png");
     var vs_overlay = $('<div id="vs_overlay"> <div id="vs_overlay_screen"></div> <div id="vs_overlay_body"> <div id="vs_spinner"><img src=' + spinnerSrc + ' /></div><span id="scrape_status">scraping</span></div></div>');
+    //var vs_overlay = $("");
     
-    vs_overlay.prependTo('body');
-    $("body").addClass("vs_overlay");
+    vs_overlay.prependTo('body'); // commented 12/5/16
+     
+  
+    //$("body").addClass("vs_overlay");
     //$("#vs_overlay").css("display", "none");
     setTimeout(centerOverlayBody, 200); // this is hacky (todo: figure out why it isn't centered correctly)
     centerOverlayBody();

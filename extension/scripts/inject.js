@@ -38,6 +38,11 @@ if(typeof window.vs_scripts == "undefined") {
     debug.src = chrome.extension.getURL('scripts/parse.js');
     debug.id = "injected_parse";
     document.body.appendChild(debug);
+  
+    var extra = document.createElement('script');
+    extra.src = chrome.extension.getURL('scripts/extra.js');
+    extra.id = "injected_extra";
+    document.body.appendChild(extra);
 
     var debug = document.createElement('script');
     debug.src = chrome.extension.getURL('scripts/client_debug.js');

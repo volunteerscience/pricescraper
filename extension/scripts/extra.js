@@ -5,6 +5,8 @@ function registerType(typename, func) {
 }
 
 function refineCollective() {
+    console.log(collective);
+  
     var refinedCollective = {};
     
     for(var item in collective) {
@@ -52,7 +54,11 @@ function refineCollective() {
                                 for(var x = 0; x < dirs.length; x++) {
                                     if(dirs[x] in metaData) {
                                         dirFound = true;
-                                        var dir = isDirection(dirs[x], ctxtElements[i], priceElements[j]); // boolean, distance
+                                        var mode = "adjacent";
+                                        if("mode" in metaData) {
+                                            mode = metaData["mode"];
+                                        }
+                                        var dir = isDirection(dirs[x], ctxtElements[i], priceElements[j], mode); // boolean, distance
                                         totalDist += dir[1];
                                         if(!(dir[0] && dir[1] < metaData[dirs[x]])) {
                                             allDirsGood = false;
