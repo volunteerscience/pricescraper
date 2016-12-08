@@ -12,7 +12,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         }
         
         if(window.scrollY - prevScrollY < scrollIntervalY && window.scrollY - prevScrollY >= 0 && prevScrollY != 0) {
-            console.log("scrolled " + (window.scrollY - prevScrollY) + " against scroll interval " + scrollIntervalY);
+            //console.log("window.scrollY - prevScrollY is " + prevScrollY);
+            //console.log("scrolled " + (window.scrollY - prevScrollY) + " against scroll interval " + scrollIntervalY);
             lastScrollCutY = scrollIntervalY - (window.scrollY - prevScrollY);
         }
  

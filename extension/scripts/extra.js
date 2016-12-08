@@ -5,7 +5,7 @@ function registerType(typename, func) {
 }
 
 function refineCollective() {
-    console.log(collective);
+    //console.log(collective);
   
     var refinedCollective = {};
     

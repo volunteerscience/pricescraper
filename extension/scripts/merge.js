@@ -119,7 +119,7 @@ function merge(ours, theirs, labels) {
             var ourPriceType = Object.keys(oursClean)[0];
             var theirPriceType = Object.keys(theirsClean)[0];
             var ourPrices = ours[i]["vs_price"][ourPriceType];
-            var theirPrices = ours[i]["vs_price"][theirPriceType];
+            var theirPrices = theirs[bestMatch]["vs_price"][theirPriceType];
             
             //var ourPrices = ours[i]["vs_price"]["text"];
             //var theirPrices = theirs[bestMatch]["vs_price"]["text"];
@@ -225,8 +225,9 @@ function merge(ours, theirs, labels) {
             //console.log("asdf324");
             for(var x = 0; x < theirPrices.length; x++) {
                 if(theirPricesUsed.indexOf(x) < 0) {
-                    //console.log("ONLY OCCURRED ON SERVER: " + JSON.stringify(theirPrices[x]));
-                    //console.log(pullContext(theirs[bestMatch]["vs_price"], x));
+                    console.log("ONLY OCCURRED ON SERVER: " + JSON.stringify(theirPrices[x]));
+                    console.log(theirs);
+                    console.log(pullContext(theirs[bestMatch]["vs_price"], x));
                     var ctxt = pullContext(theirs[bestMatch]["vs_price"], x);
                     if(ctxt != null) {
                         serverPriceHolder.append(JSON.parse(ctxt)[0] + ": " + theirPrices[x] + "<br />");
@@ -661,7 +662,7 @@ if(typeof chrome.runtime.onMessage != "undefined") { // ie not debug mode
                 diffNum = merge(request.ours, request.theirs, request.labels);
                 var takeSnap = false;
                 setTimeout(function() {
-                    if(diffNum >= 2) {
+                    if(diffNum >= 0) {
                         takeSnap = confirm("Notable price personalization was detected on this page.  Can we take a screenshot?");
                         if(takeSnap) {
                             snap(request.instance_id, function() {

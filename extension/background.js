@@ -52,7 +52,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
                                 else {
                                     //console.log("alright");
                                     var wait = 0;
-                                    console.log("match status is " + matchStatus);
+                                    /*console.log("match status is " + matchStatus);*/
                                     if(matchStatus.wait) {
                                         wait = matchStatus.wait;
                                     }

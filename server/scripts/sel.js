@@ -590,24 +590,24 @@ function isDirection(dir, elemA, elemB, mode) {
     
     if(mode == "adjacent") {
         if(posElemA.left <= posElemB.left) {
-            console.log("IT'S LEFT");
+            //console.log("IT'S LEFT");
             directions["left"] = true;
             distances["left"] = Math.abs(posElemA.right - posElemB.left);
         }
         if(posElemA.right >= posElemB.right) {
-            console.log("IT'S RIGHT");
+            //console.log("IT'S RIGHT");
             directions["right"] = true;
             distances["right"] = Math.abs(posElemA.left - posElemB.right);
         }
         if(posElemA.bottom <= posElemB.top) {
             directions["above"] = true;
             distances["above"] = Math.abs(posElemA.bottom - posElemB.top);
-            console.log($(elemA).text() + " IS ABOVE " + $(elemB).text().replace(/\s/g, '') + " by " + distances["above"]);
+            //console.log($(elemA).text() + " IS ABOVE " + $(elemB).text().replace(/\s/g, '') + " by " + distances["above"]);
         }
         if(posElemA.top >= posElemB.bottom) {
             directions["below"] = true;
             distances["below"] = Math.abs(posElemA.top - posElemB.bottom);
-            console.log($(elemA).text() + " IS BELOW " + $(elemB).text().replace(/\s/g, '') + " by " + distances["below"]);
+            //console.log($(elemA).text() + " IS BELOW " + $(elemB).text().replace(/\s/g, '') + " by " + distances["below"]);
         }
     }
     else if(mode == "middles") {
