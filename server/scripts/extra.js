@@ -5,7 +5,7 @@ function registerType(typename, func) {
 }
 
 function refineCollective() {
-    console.log(collective);
+    //console.log(collective);
   
     var refinedCollective = {};
     
@@ -52,7 +52,7 @@ function refineCollective() {
                                 var totalDist = 0;
                                 var dirFound = false;
                                 for(var x = 0; x < dirs.length; x++) {
-                                    console.log("checking price element " + $(priceElements[j]).text().replace(/\s/g,'') + " against label " + $(ctxtElements[i]).text() + " with direction " + dirs[x]);
+                                    //console.log("checking price element " + $(priceElements[j]).text().replace(/\s/g,'') + " against label " + $(ctxtElements[i]).text() + " with direction " + dirs[x]);
                                     if(dirs[x] in metaData/* || dirs[x] == "below"*/) {
                                         //console.log("We have " + dirs[x] + " in metadata");
                                         dirFound = true;
@@ -61,7 +61,7 @@ function refineCollective() {
                                             mode = metaData["mode"];
                                         }
                                         var dir = isDirection(dirs[x], ctxtElements[i], priceElements[j], mode); // boolean, distance
-                                        console.log("the distance was found to be " + dir[1] + " in direction " + dirs[x] + ", meaning that " + dirs[x] + " is " + dir[0]);
+                                        //console.log("the distance was found to be " + dir[1] + " in direction " + dirs[x] + ", meaning that " + dirs[x] + " is " + dir[0]);
                                         totalDist += dir[1];
                                         if(!(dir[0] && dir[1] < metaData[dirs[x]])) {
                                             allDirsGood = false;
@@ -70,7 +70,7 @@ function refineCollective() {
                                     }
                                 }
                                 if(allDirsGood) {
-                                    console.log("All dirs are good!");
+                                    //console.log("All dirs are good!");
                                     if(!dirFound) {
                                         totalDist = distance(ctxtElements[i], priceElements[j])[1];
                                     }

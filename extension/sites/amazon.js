@@ -22,7 +22,7 @@ function vs_continue() {
          
             {"desc":[{"chain":[{"class-":"+s-access-image"},{"tag-":"=img"}]},{"name":"vs_product_img","deep":true,"ctxt":{"ref":"vs_container"},"vsid":"generate","tag":true,"cascade":true,"grab":"src,srcset"}]},
             
-            {"desc":[{"chain":[{"class-":"+a-size-small"},{"class-":"+a-color-null"},{"class-":"+s-inline"},{"class-":"+a-text-normal"}]},{"name":"vs_price::{\"above\":30,\"name\":\"primary_label\",\"gap-above\":10,\"mode\":\"middles\"}","deep":true,"ctxt":{"ref":"vs_container"},"vsid":"generate","tag":true,"cascade":true,"grab":"text"}]}
+            {"desc":[{"chain":[{"class-":"+a-size-small"},{"class-":"+a-color-null"},{"class-":"+s-inline"},{"class-":"+a-text-normal"}]},{"name":"vs_price::{\"above\":40,\"name\":\"primary_label\",\"gap-above\":10,\"mode\":\"middles\"}","deep":true,"ctxt":{"ref":"vs_container"},"vsid":"generate","tag":true,"cascade":true,"grab":"text"}]}
         ];
     
     registerType("amaprice", function(elem) {
